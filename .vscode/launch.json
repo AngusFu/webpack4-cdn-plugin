@@ -21,8 +21,7 @@
           "request": "launch",
           "name": "debug 2",
           "cwd": "${workspaceFolder}/example2",
-          "program": "${workspaceFolder}/example2/node_modules/webpack-cli/bin/cli.js",
-          "args": ["build"],
+          "program": "${workspaceFolder}/example2/node_modules/.bin/webpack",
           "env": {
             "NODE_ENV": "production",
             "VS_DEBUG": "true"
