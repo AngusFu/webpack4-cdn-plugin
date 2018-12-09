@@ -4,11 +4,13 @@ Upload webpack assets to cdn, allowing to rename/hash assets.
 
 ## Important Notes
 
+- **Node 8+** (which supports `async/await`) is required.
+
 - This plugin only works with **webpack@4**.
 
 - This plugin only takes effects in **production mode**. (`process.env.NODE_ENV` is set to `production`)
 
-- For now, please set `optimization.minimize` to `false`.
+- For now, please set `optimization.minimize` to `false` (do NOT use UglifyJS plugin either).
 
 ## Install
 
@@ -45,10 +47,11 @@ if (process.env.NODE_ENV === 'production') {
     assetMappingVariable: 'webpackAssetMappings',
 
     // a function, which return `Promise<url>`
+    // you can do your compressing works with content
     // `params.content`: `String | Buffer`
     // `params.extname`: file extension
-    // `params.filename`: original filename
-    uploadContent ({ content, extname, filename }) {
+    // `params.file`: original file (with path)
+    uploadContent ({ content, extname, file }) {
       return require('your-cdn-provider').uploadContent({
         content: content,
         fileType: getFileType(extname)

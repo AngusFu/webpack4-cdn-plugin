@@ -19,8 +19,8 @@ module.exports = {
       backupHTMLFiles: true,
       manifestFilename: 'manifest.json',
       assetMappingVariable: 'webpackAssetMappings',
-      uploadContent ({ filename, content, extname }) {
-        return filename
+      uploadContent ({ file, content, extname }) {
+        return file
         // const hash = (Math.random() * 10e8).toString(16).split('.')[1]
         // return Promise.resolve(`https://cdn.example.com/${hash}.${extname}`)
       }

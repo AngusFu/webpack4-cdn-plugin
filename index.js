@@ -116,7 +116,7 @@ module.exports = class AssetCDNManifestPlugin {
     try {
       const asset = this.replaceFileContents(file, compilation)
       const url = await this.uploadContent({
-        filename: file,
+        file,
         content: asset.source(),
         extname: getExtname(file)
       })
@@ -213,7 +213,8 @@ module.exports = class AssetCDNManifestPlugin {
     // we can replace these urls within html files
     const { publicPath = '' } = compilation.mainTemplate.outputOptions
     const replacers = Array.from(assetsMap.entries()).map(([file, url]) => {
-      const re = new RegExp(joinPath(publicPath, file).replace(/\./g, '\\.'), 'g')
+      const path = publicPath === '' ? file : joinPath(publicPath, file)
+      const re = new RegExp(path.replace(/\./g, '\\.'), 'g')
       return s => s.replace(re, url)
     })
     for (let file of htmlFilenames) {
