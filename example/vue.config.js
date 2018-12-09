@@ -19,7 +19,7 @@ module.exports = {
   configureWebpack: {
     plugins: process.env.NODE_ENV === 'production' ? [plugin] : [],
     optimization: {
-      minimize: false
+      minimize: true
     }
   },
   pages: {

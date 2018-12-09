@@ -1,6 +1,18 @@
 const assert = require('assert')
 const { extname, join: joinPath } = require('path')
-const RawSource = require('webpack-sources').RawSource
+const { RawSource } = require('webpack-sources')
+
+/**
+ * `new RegExp` made easier
+ * @param {RegExp} re       regular expression
+ * @param {String} replaced simple string in `re`, for example
+ * @param {String} replacer regular expression part that is more complex
+ */
+const quickRegExpr = function (re, replaced, replacer) {
+  const code = `return ${re.toString()}`.replace(replaced, replacer)
+  // eslint-disable-next-line
+  return Function(code)()
+}
 
 module.exports = class AssetCDNManifestPlugin {
   /**
@@ -34,6 +46,11 @@ module.exports = class AssetCDNManifestPlugin {
     this.keepLocalFiles = Boolean(keepLocalFiles)
     this.backupHTMLFiles = Boolean(backupHTMLFiles)
     this.assetMappingVariable = String(assetMappingVariable || 'webpackAssetMappings')
+
+    const id = (Math.random() * 10e8).toString(16).replace('.', '')
+    this.publicPathReplacer = `____public_path_${id}____`
+    this.entryFeature = '// webpackBootstrap'
+    this.entryFeatureMarker = '/**! webpackBootstrap */'
   }
 
   /**
@@ -50,37 +67,31 @@ module.exports = class AssetCDNManifestPlugin {
 
     if (getExtname(file) !== 'js') return asset
 
-    const regexp = function (re) {
-      const { requireFn } = compilation.mainTemplate
-      const code = `return ${re.toString()}`.replace('__webpack_require__', requireFn)
-      // eslint-disable-next-line
-      return Function(code)()
-    }
-
+    const { publicPathReplacer } = this
+    const regexp = re => quickRegExpr(re, '__publicpath__', publicPathReplacer)
     let source = asset.source()
     let changed = false
 
-    // use `// webpackBootstrap` as entry chunk's feature
-    const entryFeature = '// webpackBootstrap'
-    if (source.includes(entryFeature)) {
+    const entryFeatureMarker = this.entryFeatureMarker
+    if (source.includes(entryFeatureMarker)) {
       // public path assigning is no longer necessary
       // `__webpack_require__.p = "/static/"`
       const reWebpackRequireAssignment = regexp(
-        /__webpack_require__\.p\s*=\s*[^\n]+/g
+        /__publicpath__\s*=\s+[^\n]+/g
       )
 
       // for public path concatenations that are not followed by quotes,
       // just remove them
-      // expample 1: `__webpack_require__.p \s*=\s*[]+ href`
-      // expample 2: `__webpack_require__.p \s*=\s*[]+ ({...`
+      // expample 1: `__webpack_require__.p = xxx + href`
+      // expample 2: `__webpack_require__.p = xxx + ({...`
       const reWebpackRequireConcatenation = regexp(
-        /(__webpack_require__\.p\s*\+\s*)([^"\s][^\n]+)/g
+        /(__publicpath__\s*\+\s+)([^"\s][^\n]+)/g
       )
 
       changed = true
       source = source
         // inject manifest
-        .replace(entryFeature, `${entryFeature}\n${this.assetManifest}\n`)
+        .replace(entryFeatureMarker, `${this.assetManifest}`)
         // drop public path to empty string
         .replace(reWebpackRequireAssignment, match => `/* ${match} */`)
         // drop public path concatenation
@@ -89,7 +100,7 @@ module.exports = class AssetCDNManifestPlugin {
 
     // public path concatenation followed by quote (for now, ONLY double quote)
     // example: `__webpack_require__.p + "path/to/assets"`
-    const reWebapckRequireAsset = regexp(/__webpack_require__.p\s*\+\s*"([^"]+)"/g)
+    const reWebapckRequireAsset = regexp(/__publicpath__\s*\+\s+"([^"]+)"/g)
     if (reWebapckRequireAsset.test(source)) {
       changed = true
       source = source.replace(reWebapckRequireAsset, (m, g1) => {
@@ -161,6 +172,24 @@ module.exports = class AssetCDNManifestPlugin {
         }
         return str
       })
+
+      // SEE https://webpack.js.org/api/compilation-hooks/#optimizechunkassets
+      compilation.hooks.optimizeChunkAssets.tapAsync(this.pluginName, (chunks, callback) => {
+        const { requireFn } = compilation.mainTemplate
+        const { publicPathReplacer, entryFeature, entryFeatureMarker } = this
+        const rePublicPath = quickRegExpr(/__webpack_require__\.p\s+/g, '__webpack_require__', requireFn)
+
+        chunks.forEach(chunk => {
+          chunk.files.forEach(file => {
+            let source = compilation.assets[file].source()
+            source = source.replace(entryFeature, entryFeatureMarker)
+            // replace `__webpack_require__.p` with `this.publicPathReplacer`
+            source = source.replace(rePublicPath, `${publicPathReplacer} `)
+            compilation.assets[file] = new RawSource(source)
+          })
+        })
+        callback()
+      })
     })
 
     compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
@@ -204,7 +233,7 @@ module.exports = class AssetCDNManifestPlugin {
     await Promise.all(firstBatchFiles.map(uploadFile))
 
     // DO NOT move this line!!!
-    this.assetManifest = `window.${this.assetMappingVariable} = ${mapToJSON(assetsMap)}`
+    this.assetManifest = `window.${this.assetMappingVariable} = ${mapToJSON(assetsMap)};`
 
     // upload entry chunk files
     await Promise.all(epFiles.map(uploadFile))
@@ -243,6 +272,8 @@ module.exports = class AssetCDNManifestPlugin {
 
     // generate manifest file
     if (this.manifestFilename) {
+      // TODO
+      // ? can we use: https://webpack.js.org/api/compilation-hooks/#additionalassets
       compilation.assets[this.manifestFilename] = new RawSource(mapToJSON(assetsMap))
     }
     done()
@@ -264,11 +295,7 @@ function getExtname (file) {
  * @param {Map} map simple JavaScript Map object
  */
 function mapToJSON (map) {
-  return JSON.stringify(
-    [...map].reduce((o, [k, v]) => Object.assign(o, { [k]: v }), {}),
-    null,
-    2
-  )
+  return JSON.stringify([...map].reduce((o, [k, v]) => Object.assign(o, { [k]: v }), {}))
 }
 
 /**

@@ -10,7 +10,8 @@ Upload webpack assets to cdn, allowing to rename/hash assets.
 
 - This plugin only takes effects in **production mode**. (`process.env.NODE_ENV` is set to `production`)
 
-- For now, please set `optimization.minimize` to `false` (do NOT use UglifyJS plugin either).
+- <del>For now, please set `optimization.minimize` to `false` (do NOT use UglifyJS plugin either).</del>(Update: it's alright to be `true` since v1.1.0)
+
 
 ## Install
 
