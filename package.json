@@ -2,12 +2,22 @@
   "name": "webpack4-cdn-plugin",
   "version": "1.1.0",
   "main": "index.js",
+  "description": "Uploading your webpack-generated assets to CDN, allowing your CDN provider to rename/rehash files.",
+  "keywords": ["webpack", "webpack4", "CDN", "upload", "rename"],
   "files": [
     "./index.js"
   ],
-  "repository": "git@github.com:AngusFu/webpack4-cdn-plugin.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AngusFu/webpack4-cdn-plugin.git"
+  },
   "author": "wemlion <angusfu1126@qq.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AngusFu/webpack4-cdn-plugin/issues"
+  },
+  "homepage": "https://github.com/AngusFu/webpack4-cdn-plugin#readme",
+  
   "peerDependencies": {
     "webpack": "4.*"
   },
