@@ -9,6 +9,24 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js'
   },
+  module: {
+    rules: [
+      {
+        test: /\.(png|jpg|gif)$/,
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+              limit: 1
+            }
+          }
+        ]
+      }
+    ]
+  },
+  optimization: {
+    minimize: false
+  },
   plugins: [
     new HtmlWebpackPlugin({
       inject: true
