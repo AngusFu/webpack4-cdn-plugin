@@ -12,6 +12,7 @@ Uploading your webpack-generated assets to CDN, allowing your CDN provider to re
 
 - <del>For now, please set `optimization.minimize` to `false` (do NOT use UglifyJS plugin either).</del>(Update: it's alright to be `true` since v1.1.0)
 
+- files in CSS is not supported yet
 
 ## Install
 
