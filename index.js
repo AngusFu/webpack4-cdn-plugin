@@ -210,7 +210,7 @@ module.exports = class AssetCDNManifestPlugin {
 
     // now, since all files (except html/sourcemap) are uploaded,
     // we can replace these urls within html files
-    const { publicPath } = compilation.mainTemplate.outputOptions
+    const { publicPath = '' } = compilation.mainTemplate.outputOptions
     const replacers = Array.from(assetsMap.entries()).map(([file, url]) => {
       const re = new RegExp(joinPath(publicPath, file).replace(/\./g, '\\.'), 'g')
       return s => s.replace(re, url)
