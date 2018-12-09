@@ -8,6 +8,8 @@ Upload webpack assets to cdn, allowing to rename/hash assets.
 
 - This plugin only takes effects in **production mode**. (`process.env.NODE_ENV` is set to `production`)
 
+- For now, please set `optimization.minimize` to `false`.
+
 ## Install
 
 ```
