@@ -3,13 +3,16 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const WebpackCDNPlugin = require('../index')
 
 module.exports = {
+  mode: 'production',
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js'
   },
   plugins: [
-    new HtmlWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      inject: true
+    }),
     new WebpackCDNPlugin({
       keepLocalFiles: true,
       keepSourcemaps: true,
@@ -17,9 +20,9 @@ module.exports = {
       manifestFilename: 'manifest.json',
       assetMappingVariable: 'webpackAssetMappings',
       uploadContent ({ filename, content, extname }) {
-        // return filename
-        const hash = (Math.random() * 10e8).toString(16).split('.')[1]
-        return Promise.resolve(`https://cdn.example.com/${hash}.${extname}`)
+        return filename
+        // const hash = (Math.random() * 10e8).toString(16).split('.')[1]
+        // return Promise.resolve(`https://cdn.example.com/${hash}.${extname}`)
       }
     })
   ]
