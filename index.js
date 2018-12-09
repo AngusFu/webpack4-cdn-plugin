@@ -141,6 +141,7 @@ module.exports = class AssetCDNManifestPlugin {
       console.warn(
         'This plugin is meant to be used only under production mode.'
       )
+      return
     }
 
     compiler.hooks.compilation.tap(this.pluginName, compilation => {
