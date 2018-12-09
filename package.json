@@ -2,6 +2,7 @@
   "name": "webpack4-cdn-plugin",
   "version": "1.0.0",
   "main": "index.js",
+  "files": ["./index.js"],
   "repository": "git@github.com:AngusFu/webpack4-cdn-plugin.git",
   "author": "wemlion <angusfu1126@qq.com>",
   "license": "MIT",
