@@ -62,7 +62,7 @@ module.exports = class AssetCDNManifestPlugin {
     const assets = compilation.assets
 
     for (let file of cssFiles) {
-      let content = assets[file].source()
+      let content = assets[file].source().toString()
       let changed = false
       content = content.replace(re, (match, path) => {
         changed = true
@@ -90,7 +90,7 @@ module.exports = class AssetCDNManifestPlugin {
     assert(asset, `${file} does not exists`)
 
     if (getExtname(file) !== 'js') return asset
-    let source = asset.source()
+    let source = asset.source().toString()
 
     const { entryFeatureMarker } = this
     // inject manifest
@@ -144,9 +144,6 @@ module.exports = class AssetCDNManifestPlugin {
 
     compiler.hooks.compilation.tap(this.pluginName, compilation => {
       const mainTemplate = compilation.mainTemplate
-      const publicPath = mainTemplate.outputOptions.publicPath
-      assert(!publicPath || publicPath === '/', 'Error: do not set `ouput.publicPath`.')
-
       const assetPathHook = mainTemplate.hooks.assetPath
       assetPathHook.tap(this.pluginName, (path, data) => {
         // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
@@ -221,6 +218,10 @@ module.exports = class AssetCDNManifestPlugin {
   }
 
   async onEmit (compilation, done) {
+    const mainTemplate = compilation.mainTemplate
+    const publicPath = mainTemplate.outputOptions.publicPath || ''
+    assert(!publicPath || publicPath === '/', 'Error: do not set `ouput.publicPath`:' + publicPath)
+
     const assetsMap = this.assetsMap
     const chunkGroups = compilation.chunkGroups
     const uploadFile = file => this.upload(file, compilation)
@@ -273,10 +274,9 @@ module.exports = class AssetCDNManifestPlugin {
 
     // now, since all files (except html/sourcemap) are uploaded,
     // we can replace these urls within html files
-    const { publicPath = '' } = compilation.mainTemplate.outputOptions
     const replacers = Array.from(assetsMap.entries()).map(([file, url]) => {
       const re = new RegExp(`${publicPath}${file}`.replace(/\./g, '\\.'), 'g')
-      return s => s.replace(re, url)
+      return s => s.toString().replace(re, url)
     })
     for (let file of htmlFilenames) {
       const orirgSource = compilation.assets[file].source
