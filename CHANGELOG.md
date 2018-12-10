@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.2.0"></a>
+# [1.2.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.1.0...v1.2.0) (2018-12-10)
+
+
+### Bug Fixes
+
+* add warning for publicPath ([42de621](https://github.com/AngusFu/webpack4-cdn-plugin/commit/42de621))
+
+
+### Features
+
+* feature support when `optimization.minimize: true` ([ada3bff](https://github.com/AngusFu/webpack4-cdn-plugin/commit/ada3bff))
+* support stylesheets with `url()`s ([ea472eb](https://github.com/AngusFu/webpack4-cdn-plugin/commit/ea472eb))
+
+
+
 <a name="1.1.0"></a>
 # [1.1.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.0.3...v1.1.0) (2018-12-09)
 
