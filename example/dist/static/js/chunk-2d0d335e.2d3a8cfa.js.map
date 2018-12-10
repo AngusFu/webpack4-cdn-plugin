@@ -1,0 +1,1 @@
+{"version":3,"sources":["webpack:///./src/lib/dynamic.js"],"names":["then","console","log"],"mappings":";;;;;;AAAA;AAAA,oGAAeA,IAAf,CAAoBC,OAAO,CAACC,GAA5B;AAEe,+EAAf,E","file":"static/js/chunk-2d0d335e.2d3a8cfa.js","sourcesContent":["import ('./x').then(console.log)\n\nexport default 'dynamic-module'\n"],"sourceRoot":""}
