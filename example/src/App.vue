@@ -51,7 +51,7 @@ export default {
 
 <style>
 body {
-  background-image: url('./assets/backgroud.png');
+  background: url('./assets/backgroud.png') no-repeat 0 0;
 }
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;

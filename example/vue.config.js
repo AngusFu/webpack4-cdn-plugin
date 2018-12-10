@@ -7,9 +7,10 @@ const plugin = new WebpackCDNPlugin({
   manifestFilename: 'manifest.json',
   assetMappingVariable: 'webpackAssetMappings',
   uploadContent ({ file, content, extname }) {
-    return `//localhost:8080/${file}`
-    // const hash = (Math.random() * 10e8).toString(16).split('.')[1]
-    // return Promise.resolve(`https://cdn.example.com/${hash}.${extname}`)
+    return require('@q/qcdn').content(content, extname, {
+      https: true
+    })
+    // return `//localhost:8080/${file}`
   }
 })
 
@@ -19,7 +20,7 @@ module.exports = {
   configureWebpack: {
     plugins: process.env.NODE_ENV === 'production' ? [plugin] : [],
     optimization: {
-      minimize: true
+      minimize: false
     }
   },
   pages: {
