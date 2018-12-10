@@ -1,5 +1,5 @@
 const assert = require('assert')
-const { extname, join: joinPath } = require('path')
+const { extname, dirname, join: joinPath } = require('path')
 const { RawSource } = require('webpack-sources')
 
 /**
@@ -49,6 +49,33 @@ module.exports = class AssetCDNManifestPlugin {
 
     this.entryFeature = '// webpackBootstrap'
     this.entryFeatureMarker = '/**! webpackBootstrap */'
+  }
+
+  /**
+   * replace `url()` in CSS using assets map
+   * @param {Array<String>} cssFiles list of css filenames
+   * @param {Object} compilation webpack compilation
+   */
+  replaceCSSURLs (cssFiles, compilation) {
+    // SEE https://www.regextester.com/94251
+    const re = /url\((?!['"]?(?:data|http):)['"]?([^'")]*)['"]?\)/g
+    const assets = compilation.assets
+
+    for (let file of cssFiles) {
+      let content = assets[file].source()
+      let changed = false
+      content = content.replace(re, (match, path) => {
+        changed = true
+        const filename = joinPath(dirname(file), path)
+        const url = this.assetsMap.get(filename)
+        assert(url, `CSS Error: ${filename} in reference in ${path}, but not found.`)
+        return match.replace(path, `"${url}"`)
+      })
+
+      if (changed) {
+        assets[file].source = () => content
+      }
+    }
   }
 
   /**
@@ -151,7 +178,14 @@ module.exports = class AssetCDNManifestPlugin {
 
         chunks.forEach(chunk => {
           chunk.files.forEach(file => {
+            let changed = false
             let source = compilation.assets[file].source()
+
+            // only deal with JavaScript files
+            if (file.endsWith('.js') === false) {
+              return
+            }
+
             if (source.includes(entryFeature)) {
               // entry marker
               source = source.replace(entryFeature, entryFeatureMarker)
@@ -159,13 +193,20 @@ module.exports = class AssetCDNManifestPlugin {
               source = source.replace(rePublicPathAssign, match => `/* ${match} */`)
               // drop public path concatenation
               source = source.replace(rePublicPathConcat, (_, g1, g2) => `/* ${g1} */ ${g2}\n`)
+              changed = true
             }
 
             // rename asset paths
-            source = source.replace(reWebapckRequireAsset, (m, g1) => {
-              return `/* ${m} */ window.${this.assetMappingVariable}["${g1}"]`
-            })
-            compilation.assets[file] = new RawSource(source)
+            if (reWebapckRequireAsset.test(source)) {
+              source = source.replace(reWebapckRequireAsset, (m, g1) => {
+                return `/* ${m} */ window.${this.assetMappingVariable}["${g1}"]`
+              })
+              changed = true
+            }
+
+            if (changed) {
+              compilation.assets[file] = new RawSource(source)
+            }
           })
         })
         callback()
@@ -198,6 +239,8 @@ module.exports = class AssetCDNManifestPlugin {
       }
       return true
     })
+    // css files
+    const allCSSFiles = assetFilenames.filter(file => getExtname(file) === 'css')
 
     // Note: ep === entrypoint
     const [
@@ -207,10 +250,16 @@ module.exports = class AssetCDNManifestPlugin {
     const epFiles = getFileOfChunkGroups(epChunksGroups).filter(isNotSourceMap)
     const otherChunkFiles = getFileOfChunkGroups(otherChunkGroups).filter(isNotSourceMap)
 
-    // upload static assets and dynamic chunks first
+    // upload static assets and dynamic chunk files first
     // so as to collect file mapping data
-    const firstBatchFiles = staticAssets.concat(otherChunkFiles)
-    await Promise.all(firstBatchFiles.map(uploadFile))
+    // 1. statics
+    await Promise.all(staticAssets.map(uploadFile))
+
+    // replace CSS `url()` references
+    this.replaceCSSURLs(allCSSFiles, compilation)
+
+    // 2.dynamic chunk files (js/css)
+    await Promise.all(otherChunkFiles.map(uploadFile))
 
     // DO NOT move this line!!!
     this.assetManifest = `window.${this.assetMappingVariable} = ${mapToJSON(assetsMap)};`
@@ -220,10 +269,8 @@ module.exports = class AssetCDNManifestPlugin {
 
     // now, since all files (except html/sourcemap) are uploaded,
     // we can replace these urls within html files
-    const { publicPath = '' } = compilation.mainTemplate.outputOptions
     const replacers = Array.from(assetsMap.entries()).map(([file, url]) => {
-      const path = publicPath === '' ? file : joinPath(publicPath, file)
-      const re = new RegExp(path.replace(/\./g, '\\.'), 'g')
+      const re = new RegExp(`/${file}`.replace(/\./g, '\\.'), 'g')
       return s => s.replace(re, url)
     })
     for (let file of htmlFilenames) {
