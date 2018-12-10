@@ -8,6 +8,8 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js'
+    // DO NOT set publicPath
+    // publicPath: '/xxxxx'
   },
   module: {
     rules: [
@@ -21,11 +23,18 @@ module.exports = {
             }
           }
         ]
+      },
+      {
+        test: /\.css$/,
+        use: [
+          { loader: 'style-loader' },
+          { loader: 'css-loader' }
+        ]
       }
     ]
   },
   optimization: {
-    minimize: true
+    minimize: false
   },
   plugins: [
     new HtmlWebpackPlugin({
@@ -38,7 +47,7 @@ module.exports = {
       manifestFilename: 'manifest.json',
       assetMappingVariable: 'webpackAssetMappings',
       uploadContent ({ file, content, extname }) {
-        return file
+        return `//localhost:8080/${file}`
         // const hash = (Math.random() * 10e8).toString(16).split('.')[1]
         // return Promise.resolve(`https://cdn.example.com/${hash}.${extname}`)
       }
