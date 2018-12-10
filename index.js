@@ -143,7 +143,11 @@ module.exports = class AssetCDNManifestPlugin {
     }
 
     compiler.hooks.compilation.tap(this.pluginName, compilation => {
-      const assetPathHook = compilation.mainTemplate.hooks.assetPath
+      const mainTemplate = compilation.mainTemplate
+      const publicPath = mainTemplate.outputOptions.publicPath
+      assert(!publicPath || publicPath === '/', 'Error: do not set `ouput.publicPath`.')
+
+      const assetPathHook = mainTemplate.hooks.assetPath
       assetPathHook.tap(this.pluginName, (path, data) => {
         // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
         const taps = assetPathHook.taps.filter(tap => tap.name !== this.pluginName)
@@ -269,8 +273,9 @@ module.exports = class AssetCDNManifestPlugin {
 
     // now, since all files (except html/sourcemap) are uploaded,
     // we can replace these urls within html files
+    const { publicPath = '' } = compilation.mainTemplate.outputOptions
     const replacers = Array.from(assetsMap.entries()).map(([file, url]) => {
-      const re = new RegExp(`/${file}`.replace(/\./g, '\\.'), 'g')
+      const re = new RegExp(`${publicPath}${file}`.replace(/\./g, '\\.'), 'g')
       return s => s.replace(re, url)
     })
     for (let file of htmlFilenames) {
