@@ -10,7 +10,7 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 - This plugin only takes effects in **production mode**. (`process.env.NODE_ENV` is set to `production`)
 
-- <del>For now, please set `optimization.minimize` to `false` (do NOT use UglifyJS plugin either).</del>(Update: it's alright to be `true` since v1.1.0)
+-  `optimization.minimize: false` is **preferred** if your CDN provider can do minimization works (compressing/uglifying/optimizing).
 
 - Do NOT set `output.publicPath`!
 
