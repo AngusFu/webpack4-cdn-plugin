@@ -1,5 +1,7 @@
 # webpack4-cdn-plugin
 
+[![npm status](https://img.shields.io/npm/v/webpack4-cdn-plugin.svg)](https://www.npmjs.org/package/webpack4-cdn-plugin)
+
 Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 ## Important Notes
