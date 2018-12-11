@@ -95,10 +95,10 @@ module.exports = class AssetCDNManifestPlugin {
     if (getExtname(file) !== 'js') return asset
     let source = asset.source().toString()
 
-    const { entryFeatureMarker } = this
+    const { entryFeatureMarker, assetManifest } = this
     // inject manifest
-    if (source.includes(entryFeatureMarker)) {
-      source = source.replace(entryFeatureMarker, `${this.assetManifest}`)
+    if (assetManifest && source.includes(entryFeatureMarker)) {
+      source = source.replace(entryFeatureMarker, `${assetManifest}`)
       asset.source = () => source
     }
 
@@ -256,7 +256,13 @@ module.exports = class AssetCDNManifestPlugin {
       otherChunkGroups
     ] = toBinaryGroup(chunkGroups, group => group.isInitial())
     const epFiles = getFileOfChunkGroups(epChunksGroups).filter(isNotSourceMap)
-    const otherChunkFiles = getFileOfChunkGroups(otherChunkGroups).filter(isNotSourceMap)
+    const otherChunkFiles = getFileOfChunkGroups(otherChunkGroups)
+      .filter(isNotSourceMap)
+      // epFiles and otherChunkFiles could contain the same files,
+      // this may sound impossible, but it did happened,
+      // when I was testing DLL with a demo repo from
+      // https://github.com/babytutu/webpack-demo/tree/08ef2805882ba06979669ba5e8254c627010e1e2
+      .filter(file => epFiles.includes(file) === false)
 
     // upload static assets and dynamic chunk files first
     // so as to collect file mapping data
