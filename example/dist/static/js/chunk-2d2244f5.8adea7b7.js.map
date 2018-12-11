@@ -1,1 +1,0 @@
-{"version":3,"sources":["webpack:///./src/lib/x.js"],"names":["x","y"],"mappings":";;;;;;AAAA;AAAA,IAAMA,CAAC,GAAG;AACRA,GAAC,EAAE,EADK;AAERC,GAAC,EAAE;AAFK,CAAV;AAKeD,gEAAf,E","file":"static/js/chunk-2d2244f5.8adea7b7.js","sourcesContent":["const x = {\n  x: 22,\n  y: 3\n}\n\nexport default x\n"],"sourceRoot":""}

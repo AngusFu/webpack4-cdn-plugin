@@ -1,16 +1,20 @@
 const WebpackCDNPlugin = require('../index')
 
 const plugin = new WebpackCDNPlugin({
-  keepLocalFiles: true,
-  keepSourcemaps: true,
-  backupHTMLFiles: true,
-  manifestFilename: 'manifest.json',
+  keepLocalFiles: false,
+  keepSourcemaps: false,
+  backupHTMLFiles: false,
+  manifestFilename: false,
   assetMappingVariable: 'webpackAssetMappings',
   uploadContent ({ file, content, extname }) {
-    return require('@q/qcdn').content(content, extname, {
-      https: true
-    })
-    // return `//localhost:8080/${file}`
+    // Test error handling
+    if (file.endsWith('.svg') || file.endsWith('.css')) {
+      throw new Error('Test')
+    }
+    return `//localhost:8080/${file}`
+    // return require('your-cdn-provider').content(content, extname, {
+    //   https: true
+    // })
   }
 })
 
