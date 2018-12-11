@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "debug 1",
             "cwd": "${workspaceFolder}/example",
-            "program": "${workspaceFolder}/example/node_modules/@vue/cli-service/bin/vue-cli-service.js",
+            "program": "${workspaceFolder}/examples/example/node_modules/@vue/cli-service/bin/vue-cli-service.js",
             "args": ["build"],
             "env": {
               "NODE_ENV": "production",
@@ -21,7 +21,7 @@
           "request": "launch",
           "name": "debug 2",
           "cwd": "${workspaceFolder}/example2",
-          "program": "${workspaceFolder}/example2/node_modules/.bin/webpack",
+          "program": "${workspaceFolder}/examples/example2/node_modules/.bin/webpack",
           "env": {
             "NODE_ENV": "production",
             "VS_DEBUG": "true"
