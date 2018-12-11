@@ -57,19 +57,19 @@ module.exports = class AssetCDNManifestPlugin {
    * @param {Object} compilation webpack compilation
    */
   replaceCSSURLs (cssFiles, compilation) {
-    // SEE https://www.regextester.com/94251
-    const re = /url\((?!['"]?(?:data|http):)['"]?([^'")]*)['"]?\)/g
+    // SEE https://www.regextester.com/106463
+    const re = /url\((?!['"]?(?:data:|https?:|\/\/))(['"]?)([^'")]*)\1\)/g
     const assets = compilation.assets
 
     for (let file of cssFiles) {
       let content = assets[file].source().toString()
       let changed = false
-      content = content.replace(re, (match, path) => {
+      content = content.replace(re, (match, quote, path) => {
         changed = true
         const filename = joinPath(dirname(file), path)
         const url = this.assetsMap.get(filename)
         assert(url, `CSS Error: ${filename} in reference in ${path}, but not found.`)
-        return match.replace(path, `"${url}"`)
+        return match.replace(path, `${quote}${url}${quote}`)
       })
 
       if (changed) {
