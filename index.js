@@ -299,10 +299,9 @@ module.exports = class AssetCDNManifestPlugin {
     await Promise.all(otherChunkFiles.map(uploadFile))
 
     // DO NOT move this line!!!
-    const varname = this.assetMappingVariable
     this.assetManifest = [
-      `window["${varname}"] = ${mapToJSON(assetsMap)};`,
-      `window["${varname}"].find = function (s) {return this[s] || s;};`
+      `window["${this.assetMappingVariable}"] = ${mapToJSON(assetsMap)};`,
+      `window["${this.assetMappingVariable}"].find = function (s) {return this[s] || s;};`
     ].join('')
 
     // upload entry chunk files
