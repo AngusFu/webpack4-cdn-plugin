@@ -48,7 +48,7 @@ if (process.env.NODE_ENV === 'production') {
     // global varibale name to manifest object
     assetMappingVariable: 'webpackAssetMappings',
 
-    // a function, which return `Promise<url>`
+    // a function, which returns `Promise<url>`
     // you can do your compressing works with content
     // `params.content`: `String | Buffer`
     // `params.extname`: file extension
