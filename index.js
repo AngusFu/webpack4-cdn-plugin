@@ -180,65 +180,73 @@ module.exports = class AssetCDNManifestPlugin {
       })
 
       // SEE https://webpack.js.org/api/compilation-hooks/#optimizechunkassets
-      compilation.hooks.optimizeChunkAssets.tapAsync(this.pluginName, (chunks, callback) => {
-        const { requireFn } = compilation.mainTemplate
-        const { entryFeature, entryFeatureMarker } = this
-        const regexp = re => quickRegExpr(re, '__webpack_require__', requireFn)
-        const rePublicPathAssign = regexp(/__webpack_require__\.p = [^\n]+/g)
-
-        // for public path concatenations that are not followed by quotes, just remove them
-        // expample 1: `__webpack_require__.p = xxx + href`
-        // expample 2: `__webpack_require__.p = xxx + ({...`
-        const rePublicPathConcat = regexp(/(__webpack_require__\.p \+ )([^"\s][^\n]+)/g)
-
-        // public path concatenation followed by quote (for now, ONLY double quote)
-        // example: `__webpack_require__.p + "path/to/assets"`
-        const reWebapckRequireAsset = regexp(/__webpack_require__\.p \+ "([^"]+)"/g)
-
-        chunks.forEach(chunk => {
-          chunk.files.forEach(file => {
-            let changed = false
-            let source = compilation.assets[file].source()
-
-            // only deal with JavaScript files
-            if (file.endsWith('.js') === false) {
-              return
-            }
-
-            if (source.includes(entryFeature)) {
-              // entry marker
-              source = source.replace(entryFeature, entryFeatureMarker)
-              // drop public path to empty string
-              source = source.replace(rePublicPathAssign, match => `/* ${match} */`)
-              // drop public path concatenation
-              source = source.replace(rePublicPathConcat, (_, g1, g2) => `/* ${g1} */ ${g2}\n`)
-              changed = true
-            }
-
-            // rename asset paths
-            if (reWebapckRequireAsset.test(source)) {
-              source = source.replace(reWebapckRequireAsset, (m, g1) => {
-                return `/* ${m} */ window["${this.assetMappingVariable}"].find("${g1}")`
-              })
-              changed = true
-            }
-
-            if (changed) {
-              compilation.assets[file] = new RawSource(source)
-            }
-          })
-        })
-        callback()
-      })
+      const optimizeChunkAssetsHook = compilation.hooks.optimizeChunkAssets
+      const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(this, compilation)
+      optimizeChunkAssetsHook.tapAsync(this.pluginName, onOptimizeChunkAsset)
     })
 
     compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
   }
 
+  async onOptimizeChunkAsset (compilation, chunks, callback) {
+    const { requireFn } = compilation.mainTemplate
+    const { entryFeature, entryFeatureMarker } = this
+    const regexp = re => quickRegExpr(re, '__webpack_require__', requireFn)
+    const rePublicPathAssign = regexp(/__webpack_require__\.p = [^\n]+/g)
+
+    // for public path concatenations that are not followed by quotes, just remove them
+    // expample 1: `__webpack_require__.p = xxx + href`
+    // expample 2: `__webpack_require__.p = xxx + ({...`
+    const rePublicPathConcat = regexp(/(__webpack_require__\.p \+ )([^"\s][^\n]+)/g)
+
+    // public path concatenation followed by quote (for now, ONLY double quote)
+    // example: `__webpack_require__.p + "path/to/assets"`
+    const reWebapckRequireAsset = regexp(/__webpack_require__\.p \+ "([^"]+)"/g)
+    const files = chunks.reduce((acc, chunk) => acc.concat(chunk.files), [])
+
+    files.forEach(file => {
+      // only deal with JavaScript files
+      if (file.endsWith('.js') === false) {
+        return
+      }
+
+      let changed = false
+      let source = compilation.assets[file].source()
+
+      if (source.includes(entryFeature)) {
+        // entry marker
+        source = source.replace(entryFeature, entryFeatureMarker)
+        // drop public path to empty string
+        source = source.replace(rePublicPathAssign, match => `/* ${match} */`)
+        // drop public path concatenation
+        source = source.replace(rePublicPathConcat, (_, g1, g2) => `/* ${g1} */ ${g2}\n`)
+        changed = true
+      }
+
+      // rename asset paths
+      if (reWebapckRequireAsset.test(source)) {
+        source = source.replace(reWebapckRequireAsset, (m, g1) => {
+          return `/* ${m} */ window["${this.assetMappingVariable}"].find("${g1}")`
+        })
+        changed = true
+      }
+
+      if (changed) {
+        compilation.assets[file] = new RawSource(source)
+      }
+    })
+
+    callback()
+  }
+
   async onEmit (compilation, done) {
     const mainTemplate = compilation.mainTemplate
     const publicPath = mainTemplate.outputOptions.publicPath || ''
-    assert(!publicPath || publicPath === '/', 'Error: do not set `ouput.publicPath`:' + publicPath)
+
+    assert(
+      !publicPath || publicPath === '/',
+      `Error: do not set \`ouput.publicPath\`: ${publicPath}`
+    )
 
     const assetsMap = this.assetsMap
     const chunkGroups = compilation.chunkGroups
