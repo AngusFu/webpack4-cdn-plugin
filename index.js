@@ -68,7 +68,10 @@ module.exports = class AssetCDNManifestPlugin {
         changed = true
         const filename = joinPath(dirname(file), path)
         const url = this.assetsMap.get(filename)
-        assert(url, `CSS Error: ${filename} in reference in ${path}, but not found.`)
+        if (!url) {
+          return match
+        }
+        // assert(url, `CSS Error: ${filename} in reference in ${path}, but not found.`)
         return match.replace(path, `${quote}${url}${quote}`)
       })
 
@@ -125,9 +128,9 @@ module.exports = class AssetCDNManifestPlugin {
       this.assetsMap.set(file, url)
       return url
     } catch (e) {
-      // TODO
+      console.log(`Uploading failed: ${file}`)
       console.error(e)
-      process.exit()
+      return file
     }
   }
 
@@ -156,7 +159,7 @@ module.exports = class AssetCDNManifestPlugin {
         // `"js" + ({"chunck-name": ...`
         if (str && /\(\{/.test(str)) {
           // eslint-disable-next-line
-          return `window.${this.assetMappingVariable}[${str}]`
+          return `window.${this.assetMappingVariable}.find(${str})`
         }
         return str
       })
@@ -200,7 +203,7 @@ module.exports = class AssetCDNManifestPlugin {
             // rename asset paths
             if (reWebapckRequireAsset.test(source)) {
               source = source.replace(reWebapckRequireAsset, (m, g1) => {
-                return `/* ${m} */ window.${this.assetMappingVariable}["${g1}"]`
+                return `/* ${m} */ window.${this.assetMappingVariable}.find("${g1}")`
               })
               changed = true
             }
@@ -267,7 +270,8 @@ module.exports = class AssetCDNManifestPlugin {
     await Promise.all(otherChunkFiles.map(uploadFile))
 
     // DO NOT move this line!!!
-    this.assetManifest = `window.${this.assetMappingVariable} = ${mapToJSON(assetsMap)};`
+    this.assetManifest = `window.${this.assetMappingVariable} = ${mapToJSON(assetsMap)};\n` +
+      `window.${this.assetMappingVariable}.find = function (str) { return this[str] || str }`
 
     // upload entry chunk files
     await Promise.all(epFiles.map(uploadFile))
