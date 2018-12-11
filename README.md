@@ -8,11 +8,11 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 - This plugin only works with **webpack@4**.
 
-- This plugin only takes effects in **production mode**. (`process.env.NODE_ENV` is set to `production`)
+- **Do NOT** set `output.publicPath`!
+
+- This plugin only works in **production mode**. (i.e., `process.env.NODE_ENV` is set to `production`)
 
 -  `optimization.minimize: false` is **preferred** if your CDN provider can do minimization works (compressing/uglifying/optimizing).
-
-- Do NOT set `output.publicPath`!
 
 ## Install
 
