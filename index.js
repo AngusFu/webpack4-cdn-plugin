@@ -271,7 +271,7 @@ module.exports = class AssetCDNManifestPlugin {
 
     // DO NOT move this line!!!
     this.assetManifest = `window.${this.assetMappingVariable} = ${mapToJSON(assetsMap)};\n` +
-      `window.${this.assetMappingVariable}.find = function (str) { return this[str] || str }`
+      `window.${this.assetMappingVariable}.find = function (str) { return this[str] || str; };`
 
     // upload entry chunk files
     await Promise.all(epFiles.map(uploadFile))
