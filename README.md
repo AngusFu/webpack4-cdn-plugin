@@ -25,6 +25,8 @@ yarn add --dev webpack4-cdn-plugin
 
 ## Usage
 
+[Demo](https://github.com/AngusFu/webpack-demo) with Vue and webpack dll plugin.
+
 ```js
 const WebpackCDNPlugin = require('webpack4-cdn-plugin')
 
