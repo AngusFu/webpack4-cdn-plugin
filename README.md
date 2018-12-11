@@ -58,6 +58,24 @@ if (process.env.NODE_ENV === 'production') {
     // `params.extname`: file extension
     // `params.file`: original file (with path)
     uploadContent ({ content, extname, file }) {
+      /**
+       * Return falsy value is to say that you want to keep
+       * the file as it is. This usually happens with certain
+       * file types that is either not supported by your CDN
+       * provider, or that must be at the same server/origin
+       * with your HTML files (for example, files like `.wasm`
+       * that should be loaded by `fetch` or `XMLHttpRequest`).
+       *
+       * !!! Note
+       * Be CAREFUL with media resources (especially images).
+       * When you are using an image in your stylesheets, but
+       * choose to not upload that that image, this can cause
+       * a `404 (Not Found)` ERROR!
+       */
+      if (['ico', 'txt', 'wasm'].includes(extname)) {
+        return false
+      }
+
       return require('your-cdn-provider').uploadContent({
         content: content,
         fileType: getFileType(extname)

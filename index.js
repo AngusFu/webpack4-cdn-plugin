@@ -90,13 +90,16 @@ module.exports = class AssetCDNManifestPlugin {
    * @param {Object} compilation webpack compilation
    * @returns {Object} webpack asset object whose `.source` method could have been overridden
    */
-  injectManifest (file, compilation) {
+  tryInjectManifest (file, compilation) {
     const asset = compilation.assets[file]
     assert(asset, `${file} does not exists`)
 
-    if (getExtname(file) !== 'js') return asset
-    let source = asset.source().toString()
+    // only replace JavaScript files
+    if (getExtname(file) !== 'js') {
+      return asset
+    }
 
+    let source = asset.source().toString()
     const { entryFeatureMarker, assetManifest } = this
     // inject manifest
     if (assetManifest && source.includes(entryFeatureMarker)) {
@@ -117,12 +120,22 @@ module.exports = class AssetCDNManifestPlugin {
    */
   async upload (file, compilation) {
     try {
-      const asset = this.injectManifest(file, compilation)
+      const asset = this.tryInjectManifest(file, compilation)
       const url = await this.uploadContent({
         file,
         content: asset.source(),
         extname: getExtname(file)
       })
+
+      // we took falsy value as an signal that we should
+      // keep the file as it is.
+      if (!url) {
+        return file
+      }
+
+      // ensure that we get a valid URL
+      assert(/^(https?:)?\/\//.test(url), `Invalid url: ${url}`)
+
       // delete asset according to user option
       if (!this.keepLocalFiles) {
         delete compilation.assets[file]
