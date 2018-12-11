@@ -32,7 +32,7 @@ module.exports = class AssetCDNManifestPlugin {
       keepSourcemaps,
       backupHTMLFiles,
       manifestFilename,
-      assetMappingVariable
+      assetMappingVariable: varname
     } = options || {}
 
     assert(typeof uploadContent === 'function', '`options.uploadContent` is not a function')
@@ -45,7 +45,9 @@ module.exports = class AssetCDNManifestPlugin {
     this.keepSourcemaps = Boolean(keepSourcemaps)
     this.keepLocalFiles = Boolean(keepLocalFiles)
     this.backupHTMLFiles = Boolean(backupHTMLFiles)
-    this.assetMappingVariable = String(assetMappingVariable || 'webpackAssetMappings')
+
+    const name = ((typeof varname === 'string') && varname) || 'webpackAssetMappings'
+    this.assetMappingVariable = encodeURIComponent(name)
 
     this.entryFeature = '// webpackBootstrap'
     this.entryFeatureMarker = '/**! webpackBootstrap */'
@@ -159,7 +161,7 @@ module.exports = class AssetCDNManifestPlugin {
         // `"js" + ({"chunck-name": ...`
         if (str && /\(\{/.test(str)) {
           // eslint-disable-next-line
-          return `window.${this.assetMappingVariable}.find(${str})`
+          return `window["${this.assetMappingVariable}"].find(${str})`
         }
         return str
       })
@@ -203,7 +205,7 @@ module.exports = class AssetCDNManifestPlugin {
             // rename asset paths
             if (reWebapckRequireAsset.test(source)) {
               source = source.replace(reWebapckRequireAsset, (m, g1) => {
-                return `/* ${m} */ window.${this.assetMappingVariable}.find("${g1}")`
+                return `/* ${m} */ window["${this.assetMappingVariable}"].find("${g1}")`
               })
               changed = true
             }
@@ -277,11 +279,9 @@ module.exports = class AssetCDNManifestPlugin {
 
     // DO NOT move this line!!!
     const varname = this.assetMappingVariable
-    const safeVar = `__$$${varname}$$__`
     this.assetManifest = [
-      `var ${safeVar} = ${mapToJSON(assetsMap)};`,
-      `window.${varname} = ${safeVar};`,
-      `${safeVar}.find = function (s) {return this[s] || s;};`
+      `window["${varname}"] = ${mapToJSON(assetsMap)};`,
+      `window["${varname}"].find = function (s) {return this[s] || s;};`
     ].join('')
 
     // upload entry chunk files
