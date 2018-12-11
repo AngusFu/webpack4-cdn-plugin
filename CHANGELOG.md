@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* better error handling ([9631a62](https://github.com/AngusFu/webpack4-cdn-plugin/commit/9631a62))
+* better error handling: put out error info, and keep local file. ([9631a62](https://github.com/AngusFu/webpack4-cdn-plugin/commit/9631a62))
 
 
 
@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* css matching regexp ([50a7fb0](https://github.com/AngusFu/webpack4-cdn-plugin/commit/50a7fb0))
+* more robust css matching regexp ([50a7fb0](https://github.com/AngusFu/webpack4-cdn-plugin/commit/50a7fb0))
 
 
 
@@ -28,7 +28,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* wrong assert and possible Buffer ([86abed2](https://github.com/AngusFu/webpack4-cdn-plugin/commit/86abed2))
+* fix wrong asserting, deal with possible Buffer object ([86abed2](https://github.com/AngusFu/webpack4-cdn-plugin/commit/86abed2))
 
 
 
@@ -43,7 +43,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Features
 
-* feature support when `optimization.minimize: true` ([ada3bff](https://github.com/AngusFu/webpack4-cdn-plugin/commit/ada3bff))
+* works even if `optimization.minimize: true` ([ada3bff](https://github.com/AngusFu/webpack4-cdn-plugin/commit/ada3bff))
 * support stylesheets with `url()`s ([ea472eb](https://github.com/AngusFu/webpack4-cdn-plugin/commit/ea472eb))
 
 
