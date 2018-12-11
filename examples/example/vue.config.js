@@ -9,7 +9,7 @@ const plugin = new WebpackCDNPlugin({
   uploadContent ({ file, content, extname }) {
     // Test error handling
     if (file.endsWith('.svg') || file.endsWith('.css')) {
-      throw new Error('Test')
+      return false
     }
     return `//localhost:8080/${file}`
     // return require('your-cdn-provider').content(content, extname, {
