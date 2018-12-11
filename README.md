@@ -1,6 +1,6 @@
 # webpack4-cdn-plugin
 
-Uploading your webpack-generated assets to CDN, allowing your CDN provider to rename/rehash files.
+Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 ## Important Notes
 
