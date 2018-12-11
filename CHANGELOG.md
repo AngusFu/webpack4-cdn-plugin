@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.0"></a>
+# [1.3.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.2.4...v1.3.0) (2018-12-11)
+
+
+### Bug Fixes
+
+* improve manifest injection ([bd7d197](https://github.com/AngusFu/webpack4-cdn-plugin/commit/bd7d197))
+
+
+### Features
+
+* support for dll ([16abdd0](https://github.com/AngusFu/webpack4-cdn-plugin/commit/16abdd0))
+
+
+
 <a name="1.2.4"></a>
 ## [1.2.4](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.2.3...v1.2.4) (2018-12-11)
 
