@@ -68,11 +68,11 @@ if (process.env.NODE_ENV === 'production') {
        * with your HTML files (for example, files like `.wasm`
        * that should be loaded by `fetch` or `XMLHttpRequest`).
        *
-       * !!! Note
+       * !!! Note !!!
        * Be CAREFUL with media resources (especially images).
-       * When you are using an image in your stylesheets, but
-       * choose to not upload that that image, this can cause
-       * a `404 (Not Found)` ERROR!
+       * When you are using an image in your CSS files, while
+       * deciding not to upload that it(the image), it CAN lead
+       * to an unexpected `404 (Not Found)` ERROR.
        */
       if (['ico', 'txt', 'wasm'].includes(extname)) {
         return false
