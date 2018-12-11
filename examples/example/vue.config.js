@@ -1,4 +1,4 @@
-const WebpackCDNPlugin = require('../index')
+const WebpackCDNPlugin = require('../../index')
 
 const plugin = new WebpackCDNPlugin({
   keepLocalFiles: false,

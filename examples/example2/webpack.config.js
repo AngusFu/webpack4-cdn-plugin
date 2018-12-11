@@ -1,6 +1,6 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const WebpackCDNPlugin = require('../index')
+const WebpackCDNPlugin = require('../../index')
 
 module.exports = {
   mode: 'production',
