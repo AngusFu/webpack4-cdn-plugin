@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.1"></a>
+## [1.3.1](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.0...v1.3.1) (2018-12-11)
+
+
+### Bug Fixes
+
+* more robust global variable name ([a9db084](https://github.com/AngusFu/webpack4-cdn-plugin/commit/a9db084))
+* more robust html replacing regexpr ([8e10bb6](https://github.com/AngusFu/webpack4-cdn-plugin/commit/8e10bb6))
+* uploading function enhancement ([f434e91](https://github.com/AngusFu/webpack4-cdn-plugin/commit/f434e91))
+
+
+
 <a name="1.3.0"></a>
 # [1.3.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.2.4...v1.3.0) (2018-12-11)
 
