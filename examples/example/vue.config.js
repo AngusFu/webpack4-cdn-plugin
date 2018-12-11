@@ -1,7 +1,7 @@
 const WebpackCDNPlugin = require('../../index')
 
 const plugin = new WebpackCDNPlugin({
-  keepLocalFiles: false,
+  keepLocalFiles: true,
   keepSourcemaps: false,
   backupHTMLFiles: false,
   manifestFilename: false,
