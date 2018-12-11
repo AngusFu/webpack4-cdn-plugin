@@ -288,7 +288,7 @@ module.exports = class AssetCDNManifestPlugin {
       return s => s.toString().replace(re, url)
     })
     for (let file of htmlFilenames) {
-      const orirgSource = compilation.assets[file].source
+      const origSource = compilation.assets[file].source
       const html = compilation.assets[file].source()
       const replaced = replacers.reduce((s, fn) => fn(s), html)
       compilation.assets[file].source = () => replaced
@@ -297,7 +297,7 @@ module.exports = class AssetCDNManifestPlugin {
       if (this.backupHTMLFiles) {
         compilation.assets[`${file}.bak`] = {
           ...compilation.assets[file],
-          source: orirgSource
+          source: origSource
         }
       }
     }
