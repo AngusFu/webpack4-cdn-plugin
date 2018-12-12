@@ -14,7 +14,7 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 - This plugin only works in **production mode**. (i.e., `process.env.NODE_ENV` is set to `production`)
 
--  `optimization.minimize: false` is **preferred** if your CDN provider can do minimization works (compressing/uglifying/optimizing).
+-  `optimization.minimize: false` is **preferred** if your CDN provider can do compressing works.
 
 ## Install
 
@@ -61,16 +61,16 @@ if (process.env.NODE_ENV === 'production') {
     // `params.file`: original file (with path)
     uploadContent ({ content, extname, file }) {
       /**
-       * Return falsy value is to say that you want to keep
-       * the file as it is. This usually happens with certain
-       * file types that is either not supported by your CDN
-       * provider, or that must be at the same server/origin
-       * with your HTML files (for example, files like `.wasm`
-       * that should be loaded by `fetch` or `XMLHttpRequest`).
+       * Return falsy value means that you want to KEPP the
+       * file as it is. This usually happens with certain
+       * file types, which may not be supported by your CDN
+       * provider, or must be under the same origin with your
+       * HTML files(for example, files like `.wasm` that
+       * should be loaded by `fetch` or `XMLHttpRequest`).
        *
        * !!! Note !!!
        * Be CAREFUL with media resources (especially images).
-       * When you are using an image in your CSS files, while
+       * When you are using an image in your CSS file, while
        * deciding not to upload that it(the image), it CAN lead
        * to an unexpected `404 (Not Found)` ERROR.
        */
