@@ -250,7 +250,7 @@ module.exports = class AssetCDNManifestPlugin {
       }
 
       let changed = false
-      let source = compilation.assets[file].source()
+      let source = compilation.assets[file].source().toString()
 
       if (source.includes(entryFeature)) {
         // entry marker
@@ -355,7 +355,7 @@ module.exports = class AssetCDNManifestPlugin {
 
     for (let file of htmlFilenames) {
       const origSource = compilation.assets[file].source
-      const html = compilation.assets[file].source()
+      const html = compilation.assets[file].source().toString()
       const replaced = replaceImports(html)
       compilation.assets[file].source = () => replaced
 
