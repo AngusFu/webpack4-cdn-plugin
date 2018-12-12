@@ -1,6 +1,8 @@
+const path = require('path')
 const assert = require('assert')
-const { extname, dirname, join: joinPath } = require('path')
+const chalk = require('chalk')
 const { RawSource } = require('webpack-sources')
+const { extname, dirname, isAbsolute, join: joinPath } = path
 
 /**
  * `new RegExp` made easier
@@ -62,18 +64,40 @@ module.exports = class AssetCDNManifestPlugin {
     // SEE https://www.regextester.com/106463
     const re = /url\((?!['"]?(?:data:|https?:|\/\/))(['"]?)([^'")]*)\1\)/g
     const assets = compilation.assets
+    const { publicPath } = compilation.mainTemplate.outputOptions
 
     for (let file of cssFiles) {
-      let content = assets[file].source().toString()
       let changed = false
+      let content = assets[file].source().toString()
+
+      // TODO
+      // path matching is still error-prone
+      // errors could happen in an unexpected way
       content = content.replace(re, (match, quote, path) => {
-        changed = true
-        const filename = joinPath(dirname(file), path)
-        const url = this.assetsMap.get(filename)
+        let media = path
+        // publicPath is '/'
+        if (isAbsolute(path)) {
+          media = path.replace(RegExp(`^${publicPath}`), '')
+        } else if (/^[.]{1,2}\//.test(path)) { // real absolute path
+          media = joinPath(dirname(file), path)
+        }
+
+        const url = this.assetsMap.get(media)
+
         if (!url) {
+          console.log(
+            chalk.yellow(
+              chalk.black.bgYellow('[Warning]') +
+              ' Unexpected Result.\n' +
+              `We could not found the importing asset. Details:\n` +
+              `File path : ${file}\n` +
+              `Asset path: ${path}\n`
+            )
+          )
           return match
         }
-        // assert(url, `CSS Error: ${filename} in reference in ${path}, but not found.`)
+
+        changed = true
         return match.replace(path, `${quote}${url}${quote}`)
       })
 
@@ -143,8 +167,14 @@ module.exports = class AssetCDNManifestPlugin {
       this.assetsMap.set(file, url)
       return url
     } catch (e) {
-      console.log(`Uploading failed: ${file}`)
-      console.error(e)
+      console.log(
+        chalk.red(
+          chalk.black.bgRed('[Error]') +
+          ' Uploading failed: \n' +
+          file
+        )
+      )
+      console.log(chalk.red(e.toString()))
       return file
     }
   }
@@ -154,8 +184,13 @@ module.exports = class AssetCDNManifestPlugin {
    */
   apply (compiler) {
     if (!process.env.VS_DEBUG && process.env.NODE_ENV !== 'production') {
-      console.warn(
-        'This plugin is meant to be used only under production mode.'
+      console.log(
+        chalk.yellow(
+          chalk.black.bgYellow('[Warning]') +
+          ' webpack4-cdn-plugin only works under ' +
+          chalk.black.bgYellow('production') +
+          ' mode.'
+        )
       )
       return
     }

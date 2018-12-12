@@ -4,17 +4,24 @@
 
 Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
-## Important Notes
+
+## Read Before Use
 
 - **Node 8+** (which supports `async/await`) is required.
 
-- This plugin only works with **webpack@4**.
+- This plugin has NOT been tested on Windows platform.
 
-- **Do NOT** set `output.publicPath`!
+- This plugin supports **webpack@4** ONLY.
 
-- This plugin only works in **production mode**. (i.e., `process.env.NODE_ENV` is set to `production`)
 
--  `optimization.minimize: false` is **preferred** if your CDN provider can do compressing works.
+## Requirements
+
+- `process.env.NODE_ENV`: this plugin only works in **production mode**.
+
+- `output.publicPath`: we only support `/` or empty string (for simplicity).
+
+- `optimization.minimize`: `false` is **preferred** if your CDN provider can do compressing work.
+
 
 ## Install
 
@@ -25,9 +32,13 @@ npm install -D webpack4-cdn-plugin
 yarn add --dev webpack4-cdn-plugin
 ```
 
+
 ## Demo
 
-[Demo](https://github.com/AngusFu/webpack-demo) with Vue and webpack dll plugin.
+- [Vue demo with @vue/cli](./example/vue)
+
+- [Webpack demo with DllPlugin](./examole/webpack-dll)
+
 
 ## Usage
 
