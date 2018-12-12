@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'production') {
 
   const plugin = new Webpack4CDNPlugin({
     // whether to keep generated files (on local fs), default `false`
-    keepLocalFiles: false,
+    keepLocalFiles: true,
     // whether to keep generated sourcemaps, default `false`
     keepSourcemaps: false,
     // whether to backup html files (before replaced), default `false`

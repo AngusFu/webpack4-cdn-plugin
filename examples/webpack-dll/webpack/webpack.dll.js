@@ -19,6 +19,7 @@ module.exports = {
     vendors
   },
   plugins: [
+    new webpack.HashedModuleIdsPlugin(),
     new webpack.DllPlugin({
       name: '__$$[name]_[hash]$$__',
       path: path.join(process.cwd(), 'dll', '[name]-manifest.json')

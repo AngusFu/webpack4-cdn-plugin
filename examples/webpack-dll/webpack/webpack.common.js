@@ -11,20 +11,23 @@ if (!require('fs').existsSync(favicon)) {
 }
 
 module.exports = {
-  entry: {
-    app: './src/index.js'
-  },
+  entry: './src/index.js',
   output: {
-    filename: '[name].[contenthash:8].js',
-    path: path.join(process.cwd(), 'dist')
+    publicPath: '',
+    path: path.join(process.cwd(), 'dist'),
+    filename: 'static/js/[name].[contenthash:8].js',
+    chunkFilename: 'static/js/[name].[contenthash:8].js'
   },
   plugins: [
     new HtmlWebpackPlugin({
       favicon,
       title: 'webpack-demo',
       template: path.join(process.cwd(), 'index.template.ejs'),
-      dll: 'dll/vendors.dll.js'
+      // take this path carefully
+      // this is used in the template
+      dll: 'static/dll/vendors.dll.js'
     }),
+    new webpack.HashedModuleIdsPlugin(),
     new webpack.DllReferencePlugin({
       manifest: require('./../dll/vendors-manifest.json')
     }),
@@ -50,8 +53,7 @@ module.exports = {
           {
             loader: 'url-loader',
             options: {
-              name: '[path][name].[ext]',
-              outputPath: 'assets/',
+              name: 'static/img/[name].[hash:8].[ext]',
               limit: 8192
             }
           }

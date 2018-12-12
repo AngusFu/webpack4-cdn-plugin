@@ -8,7 +8,7 @@
     "build": "npm run dll && npm run prod",
     "dll": "NODE_ENV=production npx webpack --config webpack.dll.js",
     "prod": "NODE_ENV=production npx webpack",
-    "serve": "npx http-server -p 1234 ./output & npx http-server -o -p 8000 ./dist"
+    "serve": "npx http-server -c0 -p 1234 ./output & npx http-server -c0 -o -p 8000 ./dist"
   },
   "keywords": [
     "webpack",

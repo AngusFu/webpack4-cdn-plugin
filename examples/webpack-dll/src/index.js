@@ -4,7 +4,7 @@ import router from './router'
 import store from './store'
 import './config'
 
-import('./dynamic').then(() => {
+import(/* webpackChunkName: dynamic */ './dynamic').then(() => {
   new Vue({
     router,
     store,

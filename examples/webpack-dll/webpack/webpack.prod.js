@@ -17,13 +17,15 @@ module.exports = merge(common, {
     new MiniCssExtractPlugin({
       // Options similar to the same options in webpackOptions.output
       // both options are optional
-      filename: '[name]_[contenthash:8].css',
-      chunkFilename: '[id]_[contenthash:8].css'
+      filename: 'static/css/[name]_[contenthash:8].css',
+      chunkFilename: 'static/css/[id]_[contenthash:8].css'
     }),
     new OptimizeCssAssetsPlugin(),
+    // This is important is you are using dll plugin
     new CopyWebpackPlugin([{
       // copy dll to dist
-      from: 'dll/*'
+      from: 'dll/*',
+      to: 'static'
     }])
   ],
   module: {
