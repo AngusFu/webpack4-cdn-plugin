@@ -299,9 +299,10 @@ module.exports = class AssetCDNManifestPlugin {
     await Promise.all(otherChunkFiles.map(uploadFile))
 
     // DO NOT move this line!!!
+    const variableName = this.assetMappingVariable
     this.assetManifest = [
-      `window["${this.assetMappingVariable}"] = ${mapToJSON(assetsMap)};`,
-      `window["${this.assetMappingVariable}"].find = function (s) {return this[s] || s;};`
+      `window["${variableName}"] = ${mapToJSON(assetsMap)};`,
+      `window["${variableName}"].find = function (s) {return this[s] || s;};`
     ].join('')
 
     // upload entry chunk files
@@ -309,23 +310,24 @@ module.exports = class AssetCDNManifestPlugin {
 
     // now, since all files (except html/sourcemap) are uploaded,
     // we can replace these urls within html files
-    const replacers = Array.from(assetsMap.entries()).map(([file, url]) => {
-      const rePath = new RegExp(`${publicPath}${file}`.replace(/\./g, '\\.'))
-      const re = quickRegExpr(
-        /(?:<(?:link|script)[^>]+(?:src|href)\s*=\s*)(['"]?)(PATH)\1/g,
-        'PATH',
-        rePath.source
-      )
-
-      return s => s.toString().replace(re, (match, q, path) => {
-        return match.replace(path, url)
+    const rePublicPath = RegExp(`^${publicPath}`) // ('' or '/')
+    const reIgnorePath = /^(?:(https?:)?\/\/)|(?:data:)/
+    const reImport = /(?:<(?:link|script)[^>]+(?:src|href)\s*=\s*)(['"]?)([^'"\s>]+)\1/g
+    const replaceImports = function (source) {
+      return source.replace(reImport, (match, quote, path) => {
+        if (reIgnorePath.test(path)) return match
+        // avoid query strings that may affect the result
+        // then strip public path ('' or '/')
+        const file = path.split('?')[0].replace(rePublicPath, '')
+        const url = assetsMap.get(file)
+        return url ? match.replace(path, url) : match
       })
-    })
+    }
 
     for (let file of htmlFilenames) {
       const origSource = compilation.assets[file].source
       const html = compilation.assets[file].source()
-      const replaced = replacers.reduce((s, fn) => fn(s), html)
+      const replaced = replaceImports(html)
       compilation.assets[file].source = () => replaced
 
       // backup html files according to user option
@@ -348,8 +350,6 @@ module.exports = class AssetCDNManifestPlugin {
 
     // generate manifest file
     if (this.manifestFilename) {
-      // TODO
-      // ? can we use: https://webpack.js.org/api/compilation-hooks/#additionalassets
       compilation.assets[this.manifestFilename] = new RawSource(mapToJSON(assetsMap))
     }
     done()
