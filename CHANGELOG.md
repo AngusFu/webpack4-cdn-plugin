@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.4"></a>
+## [1.3.4](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.3...v1.3.4) (2018-12-12)
+
+
+### Bug Fixes
+
+* error caused by possible asset source that is Buffer ([f83c2d6](https://github.com/AngusFu/webpack4-cdn-plugin/commit/f83c2d6))
+
+
+
 <a name="1.3.3"></a>
 ## [1.3.3](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.2...v1.3.3) (2018-12-12)
 
