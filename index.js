@@ -160,6 +160,18 @@ module.exports = class AssetCDNManifestPlugin {
       return
     }
 
+    compiler.hooks.thisCompilation.tap(this.pluginName, compilation => {
+      const outputOptions = compilation.mainTemplate.outputOptions
+      const publicPath = outputOptions.publicPath || ''
+      assert(
+        !publicPath || publicPath === '/',
+        `Error: do not set \`ouput.publicPath\`: ${publicPath}`
+      )
+
+      // set default publicPath
+      outputOptions.publicPath = publicPath
+    })
+
     compiler.hooks.compilation.tap(this.pluginName, compilation => {
       // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
       const assetPathHook = compilation.mainTemplate.hooks.assetPath
@@ -230,17 +242,11 @@ module.exports = class AssetCDNManifestPlugin {
   }
 
   async onEmit (compilation, done) {
-    const mainTemplate = compilation.mainTemplate
-    const publicPath = mainTemplate.outputOptions.publicPath || ''
-
-    assert(
-      !publicPath || publicPath === '/',
-      `Error: do not set \`ouput.publicPath\`: ${publicPath}`
-    )
-
     const assetsMap = this.assetsMap
-    const chunkGroups = compilation.chunkGroups
     const uploadFile = file => this.upload(file, compilation)
+    const publicPath = compilation.mainTemplate.outputOptions.publicPath
+    const chunkGroups = compilation.chunkGroups
+
     // ignore sourcemaps
     const isNotSourceMap = file => !file.endsWith('.map')
     const getFileOfChunkGroups = function (groups) {
@@ -248,20 +254,17 @@ module.exports = class AssetCDNManifestPlugin {
     }
 
     const assetFilenames = Object.keys(compilation.assets)
-    const htmlFilenames = assetFilenames
-      .filter(file => getExtname(file) === 'html')
-
-    // all chunk files
+    const cssFilenames = assetFilenames.filter(file => getExtname(file) === 'css')
+    const htmlFilenames = assetFilenames.filter(file => getExtname(file) === 'html')
     const chunkFiles = getFileOfChunkGroups(chunkGroups)
     // assets (html & chunk files excluded)
     const staticAssets = assetFilenames.filter(file => {
-      if (getExtname(file) === 'html' || chunkFiles.includes(file)) {
-        return false
-      }
+      // html/css should be uploaded later
+      if (['css', 'html'].includes(getExtname(file))) return false
+      // chunk file uploaded later
+      if (chunkFiles.includes(file)) return false
       return true
     })
-    // css files
-    const allCSSFiles = assetFilenames.filter(file => getExtname(file) === 'css')
 
     // Note: ep === entrypoint
     const [
@@ -283,7 +286,8 @@ module.exports = class AssetCDNManifestPlugin {
     await Promise.all(staticAssets.map(uploadFile))
 
     // replace CSS `url()` references
-    this.replaceCSSURLs(allCSSFiles, compilation)
+    // ASUMPTION: CSS files are always in chunks
+    this.replaceCSSURLs(cssFilenames, compilation)
 
     // 2.dynamic chunk files (js/css)
     await Promise.all(otherChunkFiles.map(uploadFile))
