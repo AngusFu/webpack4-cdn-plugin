@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.2"></a>
+## [1.3.2](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.1...v1.3.2) (2018-12-12)
+
+
+### Bug Fixes
+
+* enhance html replacing with regexp ([06dfb10](https://github.com/AngusFu/webpack4-cdn-plugin/commit/06dfb10))
+* enhance path replacing, fixed [#1](https://github.com/AngusFu/webpack4-cdn-plugin/issues/1) ([8b29e1a](https://github.com/AngusFu/webpack4-cdn-plugin/commit/8b29e1a))
+* possible undefined publicPath ([ea697d8](https://github.com/AngusFu/webpack4-cdn-plugin/commit/ea697d8))
+
+
+
 <a name="1.3.1"></a>
 ## [1.3.1](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.0...v1.3.1) (2018-12-11)
 
