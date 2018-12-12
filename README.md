@@ -35,9 +35,9 @@ yarn add --dev webpack4-cdn-plugin
 
 ## Demo
 
-- [Vue demo with @vue/cli](./example/vue)
+- [Vue demo with @vue/cli](./examples/vue)
 
-- [Webpack demo with DllPlugin](./examole/webpack-dll)
+- [Webpack demo with DllPlugin](./examoles/webpack-dll)
 
 
 ## Usage
