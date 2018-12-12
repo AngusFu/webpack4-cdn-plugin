@@ -161,21 +161,18 @@ module.exports = class AssetCDNManifestPlugin {
     }
 
     compiler.hooks.compilation.tap(this.pluginName, compilation => {
-      const mainTemplate = compilation.mainTemplate
-      const assetPathHook = mainTemplate.hooks.assetPath
+      // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
+      const assetPathHook = compilation.mainTemplate.hooks.assetPath
+      const assertMsg = 'Unexpected Error in compilation.mainTemplate.hooks.assetPath'
       assetPathHook.tap(this.pluginName, (path, data) => {
-        // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
         const taps = assetPathHook.taps.filter(tap => tap.name !== this.pluginName)
-        assert(taps.length > 0, 'Unexpected Error: please file an issue to the author.')
+        assert(taps.length > 0, `${assertMsg}: please file an issue to the author.`)
 
-        const str = taps[0].fn(path, data)
-
-        // change chunk mapping rules here
-        // `"js" + ({"chunck-name": ...`
-        if (str && /\(\{/.test(str)) {
-          // eslint-disable-next-line
-          return `window["${this.assetMappingVariable}"].find(${str})`
-        }
+        const str = String(taps[0].fn(path, data)).trim()
+        assert(
+          /\n/.test(str) === false,
+          `${assertMsg}: asset path shoud not contain any line breaker ——\n ${str}`
+        )
         return str
       })
 
@@ -192,16 +189,11 @@ module.exports = class AssetCDNManifestPlugin {
     const { requireFn } = compilation.mainTemplate
     const { entryFeature, entryFeatureMarker } = this
     const regexp = re => quickRegExpr(re, '__webpack_require__', requireFn)
-    const rePublicPathAssign = regexp(/__webpack_require__\.p = [^\n]+/g)
-
-    // for public path concatenations that are not followed by quotes, just remove them
-    // expample 1: `__webpack_require__.p = xxx + href`
-    // expample 2: `__webpack_require__.p = xxx + ({...`
-    const rePublicPathConcat = regexp(/(__webpack_require__\.p \+ )([^"\s][^\n]+)/g)
-
-    // public path concatenation followed by quote (for now, ONLY double quote)
-    // example: `__webpack_require__.p + "path/to/assets"`
-    const reWebapckRequireAsset = regexp(/__webpack_require__\.p \+ "([^"]+)"/g)
+    const rePublicPathAssign = regexp(/__webpack_require__\.p\s*=\s*[^\n]+/g)
+    // !!! ASSUMPTION
+    // assume that the whole expression is in one line
+    // for public path concatenations
+    const reWebapckRequireAsset = regexp(/__webpack_require__\.p\s*\+\s*([^\n;]+)/g)
     const files = chunks.reduce((acc, chunk) => acc.concat(chunk.files), [])
 
     files.forEach(file => {
@@ -218,15 +210,13 @@ module.exports = class AssetCDNManifestPlugin {
         source = source.replace(entryFeature, entryFeatureMarker)
         // drop public path to empty string
         source = source.replace(rePublicPathAssign, match => `/* ${match} */`)
-        // drop public path concatenation
-        source = source.replace(rePublicPathConcat, (_, g1, g2) => `/* ${g1} */ ${g2}\n`)
         changed = true
       }
 
       // rename asset paths
       if (reWebapckRequireAsset.test(source)) {
         source = source.replace(reWebapckRequireAsset, (m, g1) => {
-          return `/* ${m} */ window["${this.assetMappingVariable}"].find("${g1}")`
+          return `/* ${m.trim()} */ window["${this.assetMappingVariable}"].find(${g1});\n`
         })
         changed = true
       }
