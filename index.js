@@ -183,7 +183,8 @@ module.exports = class AssetCDNManifestPlugin {
    * Webpack plugin interface
    */
   apply (compiler) {
-    if (!process.env.VS_DEBUG && process.env.NODE_ENV !== 'production') {
+    const env = process.env.NODE_ENV || compiler.options.mode
+    if (!process.env.VS_DEBUG && env !== 'production') {
       console.log(
         chalk.yellow(
           chalk.black.bgYellow('[Warning]') +
