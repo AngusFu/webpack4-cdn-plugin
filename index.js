@@ -341,7 +341,7 @@ module.exports = class AssetCDNManifestPlugin {
     // we can replace these urls within html files
     const rePublicPath = RegExp(`^${publicPath}`) // ('' or '/')
     const reIgnorePath = /^(?:(https?:)?\/\/)|(?:data:)/
-    const reImport = /(?:<(?:link|script)[^>]+(?:src|href)\s*=\s*)(['"]?)([^'"\s>]+)\1/g
+    const reImport = /(?:<(?:link|script|img)[^>]+(?:src|href)\s*=\s*)(['"]?)([^'"\s>]+)\1/g
     const replaceImports = function (source) {
       return source.replace(reImport, (match, quote, path) => {
         if (reIgnorePath.test(path)) return match
