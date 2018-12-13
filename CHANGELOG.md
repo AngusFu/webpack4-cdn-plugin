@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.5"></a>
+## [1.3.5](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.4...v1.3.5) (2018-12-13)
+
+
+### Bug Fixes
+
+* match and replace img src in html ([d162d00](https://github.com/AngusFu/webpack4-cdn-plugin/commit/d162d00))
+
+
+
 <a name="1.3.4"></a>
 ## [1.3.4](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.3...v1.3.4) (2018-12-12)
 
