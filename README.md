@@ -16,7 +16,7 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 ## Webpack Configuration
 
-- `process.env.NODE_ENV`: this plugin only works in **production mode**.
+- `process.env.NODE_ENV` OR `options.mode`: this plugin only works in **production mode**.
 
 - `output.publicPath`: we only support `/` or empty string (for simplicity).
 
@@ -89,6 +89,12 @@ if (process.env.NODE_ENV === 'production') {
         return false
       }
 
+      // You can also implement your own cache here
+      const hash = md5(content)
+      if (youCache.has(hash)) {
+        return youCache.get(hash)
+      }
+    
       return require('your-cdn-provider').uploadContent({
         content: content,
         fileType: getFileType(extname)
