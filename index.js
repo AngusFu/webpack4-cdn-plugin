@@ -55,7 +55,7 @@ module.exports = class AssetCDNManifestPlugin {
     this.assetMappingVariable = encodeURIComponent(name)
 
     this.entryFeature = '// webpackBootstrap'
-    this.entryFeatureMarker = '/**! webpackBootstrap */'
+    this.entryFeatureMarker = '__webpackBootstrap__=1'
   }
 
   /**
@@ -335,8 +335,8 @@ module.exports = class AssetCDNManifestPlugin {
     // DO NOT move this line!!!
     const variableName = this.assetMappingVariable
     this.assetManifest = [
-      `window["${variableName}"] = ${mapToJSON(assetsMap)};`,
-      `window["${variableName}"].find = function (s) {return this[s] || s;};`
+      `\n;window["${variableName}"] = ${mapToJSON(assetsMap)};`,
+      `\n;window["${variableName}"].find = function (s) {return this[s] || s;};`
     ].join('')
 
     // upload entry chunk files
