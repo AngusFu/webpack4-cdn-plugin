@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.7"></a>
+## [1.3.7](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.5...v1.3.7) (2018-12-17)
+
+
+### Bug Fixes
+
+* check `options.mode` if NODE_ENV not set ([756aa1f](https://github.com/AngusFu/webpack4-cdn-plugin/commit/756aa1f))
+* more safe entryFeatureMarker ([d8c4491](https://github.com/AngusFu/webpack4-cdn-plugin/commit/d8c4491))
+* possible `#` or `?` in css url() ([5405d7c](https://github.com/AngusFu/webpack4-cdn-plugin/commit/5405d7c))
+
+
+
 <a name="1.3.6"></a>
 ## [1.3.6](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v0.0.2...v1.3.6) (2018-12-13)
 
