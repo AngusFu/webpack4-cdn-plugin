@@ -1,8 +1,11 @@
 const path = require('path')
+const { parse } = require('url')
 const assert = require('assert')
 const chalk = require('chalk')
 const { RawSource } = require('webpack-sources')
 const { extname, dirname, isAbsolute, join: joinPath } = path
+
+const stripHashOrQuery = path => parse(path).pathname
 
 /**
  * `new RegExp` made easier
@@ -82,7 +85,8 @@ module.exports = class AssetCDNManifestPlugin {
           media = joinPath(dirname(file), path)
         }
 
-        const url = this.assetsMap.get(media)
+        // possible chars like `#` `?`
+        const url = this.assetsMap.get(stripHashOrQuery(media))
 
         if (!url) {
           console.log(
@@ -98,7 +102,7 @@ module.exports = class AssetCDNManifestPlugin {
         }
 
         changed = true
-        return match.replace(path, `${quote}${url}${quote}`)
+        return match.replace(stripHashOrQuery(media), url)
       })
 
       if (changed) {
