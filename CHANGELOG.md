@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="1.3.8"></a>
+## [1.3.8](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.7...v1.3.8) (2019-01-09)
+
+
+### Bug Fixes
+
+* css asset path replacing error ([4c49092](https://github.com/AngusFu/webpack4-cdn-plugin/commit/4c49092))
+
+
+
 <a name="1.3.7"></a>
 ## [1.3.7](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.5...v1.3.7) (2018-12-17)
 
