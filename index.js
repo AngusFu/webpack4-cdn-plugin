@@ -1,11 +1,15 @@
 const path = require('path')
-const { parse } = require('url')
+const { parse, format } = require('url')
 const assert = require('assert')
 const chalk = require('chalk')
 const { RawSource } = require('webpack-sources')
 const { extname, dirname, isAbsolute, join: joinPath } = path
 
 const stripHashOrQuery = path => parse(path).pathname
+const getQueryAndHash = path => {
+  const { search, hash } = parse(path)
+  return format({ search, hash })
+}
 
 /**
  * `new RegExp` made easier
@@ -78,6 +82,8 @@ module.exports = class AssetCDNManifestPlugin {
       // errors could happen in an unexpected way
       content = content.replace(re, (match, quote, path) => {
         let media = path
+        const extra = getQueryAndHash(path)
+
         // publicPath is '/'
         if (isAbsolute(path)) {
           media = path.replace(RegExp(`^${publicPath}`), '')
@@ -102,7 +108,7 @@ module.exports = class AssetCDNManifestPlugin {
         }
 
         changed = true
-        return match.replace(stripHashOrQuery(media), url)
+        return match.replace(path, url + extra)
       })
 
       if (changed) {
