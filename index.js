@@ -379,7 +379,7 @@ module.exports = class AssetCDNManifestPlugin {
       }
     }
 
-    // rmeove sourcemaps according to user option
+    // remove sourcemaps according to user option
     if (!this.keepSourcemaps) {
       assetFilenames.forEach(file => {
         if (!isNotSourceMap(file)) {
