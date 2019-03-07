@@ -17,7 +17,7 @@ const getQueryAndHash = path => {
  * @param {String} replaced simple string in `re`, for example
  * @param {String} replacer regular expression part that is more complex
  */
-const quickRegExpr = function (re, replaced, replacer) {
+const quickRegExpr = function(re, replaced, replacer) {
   const code = `return ${re.toString()}`.replace(replaced, replacer)
   // eslint-disable-next-line
   return Function(code)()
@@ -34,17 +34,20 @@ module.exports = class AssetCDNManifestPlugin {
    * @param {String|Boolean}  options.manifestFilename
    * @param {String} options.assetMappingVariable
    */
-  constructor (options) {
+  constructor(options) {
     const {
       uploadContent,
       keepLocalFiles,
       keepSourcemaps,
       backupHTMLFiles,
       manifestFilename,
-      assetMappingVariable: varname
+      assetMappingVariable: variableName
     } = options || {}
 
-    assert(typeof uploadContent === 'function', '`options.uploadContent` is not a function')
+    assert(
+      typeof uploadContent === 'function',
+      '`options.uploadContent` is not a function'
+    )
 
     this.pluginName = 'asset-cdn-manifest-plugin'
     this.assetsMap = new Map()
@@ -55,7 +58,8 @@ module.exports = class AssetCDNManifestPlugin {
     this.keepLocalFiles = Boolean(keepLocalFiles)
     this.backupHTMLFiles = Boolean(backupHTMLFiles)
 
-    const name = ((typeof varname === 'string') && varname) || 'webpackAssetMappings'
+    const isValidName = typeof variableName === 'string'
+    const name = (isValidName && variableName) || 'webpackAssetMappings'
     this.assetMappingVariable = encodeURIComponent(name)
 
     this.entryFeature = '// webpackBootstrap'
@@ -67,7 +71,7 @@ module.exports = class AssetCDNManifestPlugin {
    * @param {Array<String>} cssFiles list of css filenames
    * @param {Object} compilation webpack compilation
    */
-  replaceCSSURLs (cssFiles, compilation) {
+  replaceCSSURLs(cssFiles, compilation) {
     // SEE https://www.regextester.com/106463
     const re = /url\((?!['"]?(?:data:|https?:|\/\/))(['"]?)([^'")]*)\1\)/g
     const assets = compilation.assets
@@ -87,7 +91,8 @@ module.exports = class AssetCDNManifestPlugin {
         // publicPath is '/'
         if (isAbsolute(path)) {
           media = path.replace(RegExp(`^${publicPath}`), '')
-        } else if (/^[.]{1,2}\//.test(path)) { // real absolute path
+        } else if (/^[.]{1,2}\//.test(path)) {
+          // real absolute path
           media = joinPath(dirname(file), path)
         }
 
@@ -98,10 +103,10 @@ module.exports = class AssetCDNManifestPlugin {
           console.log(
             chalk.yellow(
               chalk.black.bgYellow('[Warning]') +
-              ' Unexpected Result.\n' +
-              `We could not found the importing asset. Details:\n` +
-              `File path : ${file}\n` +
-              `Asset path: ${path}\n`
+                ' Unexpected Result.\n' +
+                `We could not found the importing asset. Details:\n` +
+                `File path : ${file}\n` +
+                `Asset path: ${path}\n`
             )
           )
           return match
@@ -124,7 +129,7 @@ module.exports = class AssetCDNManifestPlugin {
    * @param {Object} compilation webpack compilation
    * @returns {Object} webpack asset object whose `.source` method could have been overridden
    */
-  tryInjectManifest (file, compilation) {
+  tryInjectManifest(file, compilation) {
     const asset = compilation.assets[file]
     assert(asset, `${file} does not exists`)
 
@@ -152,7 +157,7 @@ module.exports = class AssetCDNManifestPlugin {
    * @param {*} compilation  webpack compilation object
    * @returns {String|never}
    */
-  async upload (file, compilation) {
+  async upload(file, compilation) {
     try {
       const asset = this.tryInjectManifest(file, compilation)
       const url = await this.uploadContent({
@@ -178,11 +183,7 @@ module.exports = class AssetCDNManifestPlugin {
       return url
     } catch (e) {
       console.log(
-        chalk.red(
-          chalk.black.bgRed('[Error]') +
-          ' Uploading failed: \n' +
-          file
-        )
+        chalk.red(chalk.black.bgRed('[Error]') + ' Uploading failed: \n' + file)
       )
       console.log(chalk.red(e.toString()))
       return file
@@ -192,15 +193,15 @@ module.exports = class AssetCDNManifestPlugin {
   /**
    * Webpack plugin interface
    */
-  apply (compiler) {
+  apply(compiler) {
     const env = process.env.NODE_ENV || compiler.options.mode
     if (!process.env.VS_DEBUG && env !== 'production') {
       console.log(
         chalk.yellow(
           chalk.black.bgYellow('[Warning]') +
-          ' webpack4-cdn-plugin only works under ' +
-          chalk.black.bgYellow('production') +
-          ' mode.'
+            ' webpack4-cdn-plugin only works under ' +
+            chalk.black.bgYellow('production') +
+            ' mode.'
         )
       )
       return
@@ -221,10 +222,16 @@ module.exports = class AssetCDNManifestPlugin {
     compiler.hooks.compilation.tap(this.pluginName, compilation => {
       // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
       const assetPathHook = compilation.mainTemplate.hooks.assetPath
-      const assertMsg = 'Unexpected Error in compilation.mainTemplate.hooks.assetPath'
+      const assertMsg =
+        'Unexpected Error in compilation.mainTemplate.hooks.assetPath'
       assetPathHook.tap(this.pluginName, (path, data) => {
-        const taps = assetPathHook.taps.filter(tap => tap.name !== this.pluginName)
-        assert(taps.length > 0, `${assertMsg}: please file an issue to the author.`)
+        const taps = assetPathHook.taps.filter(
+          tap => tap.name !== this.pluginName
+        )
+        assert(
+          taps.length > 0,
+          `${assertMsg}: please file an issue to the author.`
+        )
 
         const str = String(taps[0].fn(path, data)).trim()
         assert(
@@ -236,14 +243,17 @@ module.exports = class AssetCDNManifestPlugin {
 
       // SEE https://webpack.js.org/api/compilation-hooks/#optimizechunkassets
       const optimizeChunkAssetsHook = compilation.hooks.optimizeChunkAssets
-      const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(this, compilation)
+      const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(
+        this,
+        compilation
+      )
       optimizeChunkAssetsHook.tapAsync(this.pluginName, onOptimizeChunkAsset)
     })
 
     compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
   }
 
-  async onOptimizeChunkAsset (compilation, chunks, callback) {
+  async onOptimizeChunkAsset(compilation, chunks, callback) {
     const { requireFn } = compilation.mainTemplate
     const { entryFeature, entryFeatureMarker } = this
     const regexp = re => quickRegExpr(re, '__webpack_require__', requireFn)
@@ -251,7 +261,9 @@ module.exports = class AssetCDNManifestPlugin {
     // !!! ASSUMPTION
     // assume that the whole expression is in one line
     // for public path concatenations
-    const reWebapckRequireAsset = regexp(/__webpack_require__\.p\s*\+\s*([^\n;]+)/g)
+    const reWebapckRequireAsset = regexp(
+      /__webpack_require__\.p\s*\+\s*([^\n;]+)/g
+    )
     const files = chunks.reduce((acc, chunk) => acc.concat(chunk.files), [])
 
     files.forEach(file => {
@@ -274,7 +286,9 @@ module.exports = class AssetCDNManifestPlugin {
       // rename asset paths
       if (reWebapckRequireAsset.test(source)) {
         source = source.replace(reWebapckRequireAsset, (m, g1) => {
-          return `/* ${m.trim()} */ window["${this.assetMappingVariable}"].find(${g1});\n`
+          return `/* ${m.trim()} */ window["${
+            this.assetMappingVariable
+          }"].find(${g1});\n`
         })
         changed = true
       }
@@ -287,7 +301,7 @@ module.exports = class AssetCDNManifestPlugin {
     callback()
   }
 
-  async onEmit (compilation, done) {
+  async onEmit(compilation, done) {
     const assetsMap = this.assetsMap
     const uploadFile = file => this.upload(file, compilation)
     const publicPath = compilation.mainTemplate.outputOptions.publicPath
@@ -295,13 +309,17 @@ module.exports = class AssetCDNManifestPlugin {
 
     // ignore sourcemaps
     const isNotSourceMap = file => !file.endsWith('.map')
-    const getFileOfChunkGroups = function (groups) {
+    const getFileOfChunkGroups = function(groups) {
       return groups.reduce((acc, g) => acc.concat(g.getFiles()), [])
     }
 
     const assetFilenames = Object.keys(compilation.assets)
-    const cssFilenames = assetFilenames.filter(file => getExtname(file) === 'css')
-    const htmlFilenames = assetFilenames.filter(file => getExtname(file) === 'html')
+    const cssFilenames = assetFilenames.filter(
+      file => getExtname(file) === 'css'
+    )
+    const htmlFilenames = assetFilenames.filter(
+      file => getExtname(file) === 'html'
+    )
     const chunkFiles = getFileOfChunkGroups(chunkGroups)
     // assets (html & chunk files excluded)
     const staticAssets = assetFilenames.filter(file => {
@@ -313,10 +331,10 @@ module.exports = class AssetCDNManifestPlugin {
     })
 
     // Note: ep === entrypoint
-    const [
-      epChunksGroups,
-      otherChunkGroups
-    ] = toBinaryGroup(chunkGroups, group => group.isInitial())
+    const [epChunksGroups, otherChunkGroups] = toBinaryGroup(
+      chunkGroups,
+      group => group.isInitial()
+    )
     const epFiles = getFileOfChunkGroups(epChunksGroups).filter(isNotSourceMap)
     const otherChunkFiles = getFileOfChunkGroups(otherChunkGroups)
       .filter(isNotSourceMap)
@@ -353,7 +371,7 @@ module.exports = class AssetCDNManifestPlugin {
     const rePublicPath = RegExp(`^${publicPath}`) // ('' or '/')
     const reIgnorePath = /^(?:(https?:)?\/\/)|(?:data:)/
     const reImport = /(?:<(?:link|script|img)[^>]+(?:src|href)\s*=\s*)(['"]?)([^'"\s>]+)\1/g
-    const replaceImports = function (source) {
+    const replaceImports = function(source) {
       return source.replace(reImport, (match, quote, path) => {
         if (reIgnorePath.test(path)) return match
         // avoid query strings that may affect the result
@@ -390,7 +408,9 @@ module.exports = class AssetCDNManifestPlugin {
 
     // generate manifest file
     if (this.manifestFilename) {
-      compilation.assets[this.manifestFilename] = new RawSource(mapToJSON(assetsMap))
+      compilation.assets[this.manifestFilename] = new RawSource(
+        mapToJSON(assetsMap)
+      )
     }
     done()
   }
@@ -401,7 +421,7 @@ module.exports = class AssetCDNManifestPlugin {
  *
  * @param {String} file filename
  */
-function getExtname (file) {
+function getExtname(file) {
   return extname(file).replace(/^\./, '')
 }
 
@@ -410,8 +430,10 @@ function getExtname (file) {
  *
  * @param {Map} map simple JavaScript Map object
  */
-function mapToJSON (map) {
-  return JSON.stringify([...map].reduce((o, [k, v]) => Object.assign(o, { [k]: v }), {}))
+function mapToJSON(map) {
+  return JSON.stringify(
+    [...map].reduce((o, [k, v]) => Object.assign(o, { [k]: v }), {})
+  )
 }
 
 /**
@@ -420,7 +442,7 @@ function mapToJSON (map) {
  * @param {Array} arr
  * @param {Function} pred
  */
-function toBinaryGroup (arr, pred) {
+function toBinaryGroup(arr, pred) {
   const positives = []
   const negatives = []
   for (let item of arr) {

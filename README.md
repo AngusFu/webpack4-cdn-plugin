@@ -4,7 +4,6 @@
 
 Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
-
 ## Requirements & Important Notes
 
 - **Node 8+** (which supports `async/await`) is required.
@@ -13,7 +12,6 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 - This plugin supports **webpack@4** ONLY.
 
-
 ## Webpack Configuration
 
 - `process.env.NODE_ENV` OR `options.mode`: this plugin only works in **production mode**.
@@ -21,7 +19,6 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 - `output.publicPath`: we only support `/` or empty string (for simplicity).
 
 - `optimization.minimize`: `false` is **preferred** if your CDN provider can do compressing work.
-
 
 ## Installation
 
@@ -32,13 +29,11 @@ npm install -D webpack4-cdn-plugin
 yarn add --dev webpack4-cdn-plugin
 ```
 
-
 ## Demo
 
 - [Vue demo with @vue/cli](./examples/vue)
 
 - [Webpack demo with DllPlugin](./examples/webpack-dll)
-
 
 ## Usage
 
@@ -53,7 +48,7 @@ module.exports = {
 }
 
 if (process.env.NODE_ENV === 'production') {
-  const cdnPlugin =  new WebpackCDNPlugin({
+  const cdnPlugin = new WebpackCDNPlugin({
     // whether to keep generated files (on local fs), default `false`
     keepLocalFiles: false,
     // whether to keep generated sourcemaps, default `false`
@@ -70,7 +65,7 @@ if (process.env.NODE_ENV === 'production') {
     // `params.content`: `String | Buffer`
     // `params.extname`: file extension
     // `params.file`: original file (with path)
-    uploadContent ({ content, extname, file }) {
+    uploadContent({ content, extname, file }) {
       /**
        * Return falsy value means that you want to KEPP the
        * file as it is. This usually happens with certain
@@ -94,7 +89,7 @@ if (process.env.NODE_ENV === 'production') {
       if (youCache.has(hash)) {
         return youCache.get(hash)
       }
-    
+
       return require('your-cdn-provider').uploadContent({
         content: content,
         fileType: getFileType(extname)
@@ -108,3 +103,7 @@ if (process.env.NODE_ENV === 'production') {
   module.exports.plugins.push(cdnPlugin)
 }
 ```
+
+## TODO
+
+- [ ] rewrite with typescript
