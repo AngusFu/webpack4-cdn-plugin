@@ -236,7 +236,7 @@ module.exports = class AssetCDNManifestPlugin {
         const str = String(taps[0].fn(path, data)).trim()
         assert(
           /\n/.test(str) === false,
-          `${assertMsg}: asset path shoud not contain any line breaker ——\n ${str}`
+          `${assertMsg}: asset path should not contain any line breaker ——\n ${str}`
         )
         return str
       })
