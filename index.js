@@ -382,10 +382,18 @@ module.exports = class AssetCDNManifestPlugin {
       })
     }
 
+    const { entryFeatureMarker, assetManifest } = this
     for (let file of htmlFilenames) {
       const origSource = compilation.assets[file].source
       const html = compilation.assets[file].source().toString()
-      const replaced = replaceImports(html)
+      let replaced = replaceImports(html)
+
+      // inject manifest in case there is a inline chunk plugin...
+      // TODO more strict check: replace only within <script> tags
+      if (assetManifest && replaced.includes(entryFeatureMarker)) {
+        replaced = replaced.replace(entryFeatureMarker, `${assetManifest}`)
+      }
+
       compilation.assets[file].source = () => replaced
 
       // backup html files according to user option
