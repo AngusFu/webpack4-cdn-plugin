@@ -1,4 +1,4 @@
-const WebpackCDNPlugin = require('../../index')
+const WebpackCDNPlugin = require('../../dist')
 
 const plugin = new WebpackCDNPlugin({
   keepLocalFiles: true,
@@ -6,7 +6,7 @@ const plugin = new WebpackCDNPlugin({
   backupHTMLFiles: false,
   manifestFilename: false,
   assetMappingVariable: 'webpackAssetMappings',
-  uploadContent ({ file, content, extname }) {
+  uploadContent({ file, content, extname }) {
     // Test error handling
     if (file.endsWith('.svg') || file.endsWith('.css')) {
       return false

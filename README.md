@@ -6,9 +6,9 @@ Upload your webpack-generated assets to CDN, allowing renaming/rehashing.
 
 ## Requirements & Important Notes
 
-- **Node 8+** (which supports `async/await`) is required.
+- **Node 8+** (which supports `async/await`) is <del>required</del> recommanded.
 
-- This plugin has NOT been tested on Windows platform.
+- This plugin has NOT been tested on **Windows** platform.
 
 - This plugin supports **webpack@4** ONLY.
 

@@ -1,5 +1,5 @@
 const webpackConfig = require('./webpack/webpack.prod')
-const Webpack4CDNPlugin = require('../../index')
+const Webpack4CDNPlugin = require('../../dist/index.js')
 
 module.exports = webpackConfig
 
@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === 'production') {
     // global varibale name to manifest object
     assetMappingVariable: 'webpackAssetMappings',
 
-    uploadContent ({ content, extname, file }) {
+    uploadContent({ content, extname, file }) {
       const name = basename(file)
       const path = join(__dirname, 'output', name)
       return writeFileP(path, content).then(() => {
