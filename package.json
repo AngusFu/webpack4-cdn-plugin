@@ -63,6 +63,7 @@
     "commit": "npx git-cz",
     "release": "npx standard-version",
     "format": "pretty-quick --pattern \"**/*.*(ts|js)\"",
-    "build": "bili src/index.ts"
+    "build": "tsc",
+    "prepush": "tsc"
   }
 }
