@@ -1,4 +1,4 @@
-const WebpackCDNPlugin = require('../../dist')
+const WebpackCDNPlugin = require('../../')
 
 const plugin = new WebpackCDNPlugin({
   keepLocalFiles: true,

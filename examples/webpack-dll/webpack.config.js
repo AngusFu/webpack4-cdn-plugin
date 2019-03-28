@@ -1,5 +1,5 @@
 const webpackConfig = require('./webpack/webpack.prod')
-const Webpack4CDNPlugin = require('../../dist/index.js')
+const Webpack4CDNPlugin = require('../../')
 
 module.exports = webpackConfig
 

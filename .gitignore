@@ -61,3 +61,5 @@ typings/
 .next
 .rpt2_cache/
 dist/
+types/
+build/
