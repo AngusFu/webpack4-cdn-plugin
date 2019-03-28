@@ -17,11 +17,17 @@ export function getExtname(file: string) {
  * convert simple js Map object into JSON
  */
 export function mapToJSON(map: Map<string, string>): string {
-  let o: Record<string, string> = {}
+  let obj: Record<string, string> = Object.create(null)
+  let res: Record<string, string> = Object.create(null)
   for (let [k, v] of map) {
-    o[k] = v
+    obj[k] = v
   }
-  return JSON.stringify(o)
+
+  for (let key of Object.keys(obj).sort()) {
+    res[key] = obj[key]
+  }
+
+  return JSON.stringify(res)
 }
 
 /**
