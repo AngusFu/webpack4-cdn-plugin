@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.11](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.10...v1.3.11) (2019-03-28)
+
+
+### Bug Fixes
+
+* the order of keys of asset map should not affect result ([28c59c1](https://github.com/AngusFu/webpack4-cdn-plugin/commit/28c59c1))
+
+
+
 ## [1.3.10](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.10-alpha.0...v1.3.10) (2019-03-28)
 
 
