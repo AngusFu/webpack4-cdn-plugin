@@ -118,6 +118,7 @@ export default class Webpack4CDNPlugin {
       const optimizeChunkAssetsHook = compilation.hooks.optimizeChunkAssets
       const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(
         this,
+        compiler,
         compilation
       )
       optimizeChunkAssetsHook.tapAsync(pluginName, onOptimizeChunkAsset)
@@ -125,6 +126,7 @@ export default class Webpack4CDNPlugin {
   }
 
   private async onOptimizeChunkAsset(
+    compiler: Compiler,
     compilation: Compilation,
     chunks: Chunk[],
     callback: CallableFunction
@@ -142,12 +144,20 @@ export default class Webpack4CDNPlugin {
       /__webpack_require__\.p\s*\+\s*([^\n;]+)/g
     )
 
-    const files = chunks.reduce(
-      (acc: string[], chunk) => acc.concat(chunk.files),
-      []
-    )
+    // SEE https://webpack.js.org/configuration/optimization/
+    const { runtimeChunk } = compiler.options.optimization as any
+    let runtimeChunkIds: string[] = []
+    if (runtimeChunk && runtimeChunk.name) {
+      if (typeof runtimeChunk.name === 'function') {
+        runtimeChunkIds = Array.from(compilation.entrypoints.values()).map(
+          entrypoint => runtimeChunk.name(entrypoint)
+        )
+      } else {
+        runtimeChunkIds = [runtimeChunk.name]
+      }
+    }
 
-    files.forEach(file => {
+    const replaceSource = (file: string, chunk: Chunk) => {
       // only deal with JavaScript files
       if (file.endsWith('.js') === false) {
         return
@@ -156,7 +166,10 @@ export default class Webpack4CDNPlugin {
       let changed = false
       let source = compilation.assets[file].source().toString()
 
-      if (source.includes(entryFeature)) {
+      const isEp = compilation.entrypoints.has(chunk.id)
+      const isRuntime = runtimeChunkIds.includes(chunk.id)
+
+      if ((isEp || isRuntime) && source.includes(entryFeature)) {
         // entry marker
         source = source.replace(entryFeature, entryFeatureMarker)
         // drop public path to empty string
@@ -183,7 +196,13 @@ export default class Webpack4CDNPlugin {
       if (changed) {
         compilation.assets[file] = new RawSource(source)
       }
-    })
+    }
+
+    for (const chunk of chunks) {
+      for (const file of chunk.files) {
+        replaceSource(file, chunk)
+      }
+    }
 
     callback()
   }

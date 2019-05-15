@@ -24,7 +24,21 @@ module.exports = {
   configureWebpack: {
     plugins: process.env.NODE_ENV === 'production' ? [plugin] : [],
     optimization: {
-      minimize: false
+      minimize: false,
+      // runtimeChunk: 'single', // enable "runtime" chunk
+      // runtimeChunk: {
+      //   name: entrypoint => `runtime~${entrypoint.name}`
+      // },
+      runtimeChunk: true,
+      splitChunks: {
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendor',
+            chunks: 'all'
+          }
+        }
+      }
     }
   },
   pages: {
