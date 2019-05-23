@@ -7,8 +7,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Bug Fixes
 
-* replace runtime chunks or entrypoints ONLY ([36245cd](https://github.com/AngusFu/webpack4-cdn-plugin/commit/36245cd))
-
+* revert 1.3.11 and 1.3.12
 
 
 ## [1.3.12](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.3.11...v1.3.12) (2019-05-17)
