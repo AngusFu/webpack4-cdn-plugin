@@ -38,7 +38,6 @@ export default class Webpack4CDNPlugin {
 
   private assetsMap = new Map()
   private assetManifest: string = ''
-  private entryOrRuntime = new Set()
   public pluginName = 'asset-cdn-manifest-plugin'
 
   constructor(config: Configuration) {
@@ -166,7 +165,6 @@ export default class Webpack4CDNPlugin {
           (match: string) => `/* ${match} */`
         )
         changed = true
-        this.entryOrRuntime.add(file)
       }
 
       // rename asset paths
@@ -419,14 +417,15 @@ export default class Webpack4CDNPlugin {
     const asset = compilation.assets[file]
     assert(asset, `${file} does not exists`)
 
-    if (this.entryOrRuntime.has(file) === false) {
+    // only replace JavaScript files
+    if (getExtname(file) !== 'js') {
       return asset
     }
 
     let source = asset.source().toString()
     const { entryFeatureMarker, assetManifest } = this
     // inject manifest
-    if (assetManifest) {
+    if (assetManifest && source.includes(entryFeatureMarker)) {
       source = source.replace(entryFeatureMarker, `${assetManifest}`)
       asset.source = () => source
     }
