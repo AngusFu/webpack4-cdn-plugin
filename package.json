@@ -1,6 +1,6 @@
 {
   "name": "webpack4-cdn-plugin",
-  "version": "1.3.13",
+  "version": "1.4.0",
   "main": "index.js",
   "types": "types/index.d.ts",
   "description": "Upload your webpack-generated assets to CDN, allowing renaming/rehashing.",
@@ -64,7 +64,7 @@
   },
   "scripts": {
     "commit": "npx git-cz",
-    "release": "npx standard-version",
+    "release": "npm run build && npx standard-version",
     "format": "pretty-quick --pattern \"**/*.*(ts|js)\"",
     "clean": "rm -rf build types",
     "build": "npm run clean && tsc"
