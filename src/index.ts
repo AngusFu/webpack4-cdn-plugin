@@ -6,7 +6,11 @@ import chalk from 'chalk'
 import { RawSource } from 'webpack-sources'
 import { Compiler, compilation } from 'webpack'
 
-import { Configuration, FileInfo, standardize } from './configuration'
+import {
+  Configuration as IConfiguration,
+  FileInfo as IFileInfo,
+  standardize
+} from './configuration'
 import {
   quickRegExpr,
   getExtname,
@@ -28,11 +32,11 @@ interface MainTemplate extends Compilation {
   requireFn: string
 }
 
-export type FileInfo = FileInfo
-export type Configuration = Configuration
+export type FileInfo = IFileInfo
+export type Configuration = IConfiguration
 
 export default class Webpack4CDNPlugin {
-  private config: Configuration
+  private config: Required<Configuration>
   private entryFeature = '// webpackBootstrap'
   private entryFeatureMarker = '__webpackBootstrap__=1'
 
@@ -62,8 +66,16 @@ export default class Webpack4CDNPlugin {
     }
 
     this.checkPublicPath(compiler)
+    this.renameRequireFn(compiler)
     this.tapCompilationHook(compiler)
     compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
+  }
+
+  private renameRequireFn(compiler: Compiler) {
+    compiler.hooks.compilation.tap('rename_main_template', compilation => {
+      const mainTemplate = <MainTemplate>compilation.mainTemplate
+      mainTemplate.requireFn = this.config.requireFn
+    })
   }
 
   /** take `publicPath` carefully */

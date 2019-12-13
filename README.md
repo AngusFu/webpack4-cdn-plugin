@@ -49,11 +49,14 @@ module.exports = {
 
 if (process.env.NODE_ENV === 'production') {
   const cdnPlugin = new WebpackCDNPlugin({
-    // whether to keep generated files (on local fs), default `false`
+    // rename `__webpack_require__` in webpack main template,
+    // default:  `"__webpack4cdn_plugin_require__"`
+    requireFn: '__custom_webpack_require__',
+    // whether to keep generated files (on local fs), default: `false`
     keepLocalFiles: false,
-    // whether to keep generated sourcemaps, default `false`
+    // whether to keep generated sourcemaps, default: `false`
     keepSourcemaps: false,
-    // whether to backup html files (before replaced), default `false`
+    // whether to backup html files (before replaced), default: `false`
     backupHTMLFiles: true,
     // manifest file name (`String | false`)
     manifestFilename: 'manifest.json',
@@ -103,7 +106,3 @@ if (process.env.NODE_ENV === 'production') {
   module.exports.plugins.push(cdnPlugin)
 }
 ```
-
-## TODO
-
-- [ ] rewrite with typescript
