@@ -8,8 +8,6 @@ export interface FileInfo {
 }
 
 export interface Configuration {
-  requireFn?: string
-
   uploadContent: (file: FileInfo) => Promise<string | boolean>
   /** whether to write webpack assets in local fs (usually for debugging) */
   keepLocalFiles?: boolean
@@ -29,7 +27,6 @@ export interface Configuration {
 
 /** default configuration */
 export const defaults: Omit<Required<Configuration>, 'uploadContent'> = {
-  requireFn: '__webpack4cdn_plugin_require__',
   keepLocalFiles: false,
   keepSourcemaps: false,
   backupHTMLFiles: false,

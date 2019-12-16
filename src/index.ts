@@ -11,13 +11,9 @@ import {
   FileInfo as IFileInfo,
   standardize
 } from './configuration'
-import {
-  quickRegExpr,
-  getExtname,
-  group,
-  mapToJSON,
-  getQueryAndHash
-} from './utils'
+
+import { getExtname, group, mapToJSON, getQueryAndHash } from './utils'
+import { replacePublicPath } from './replacePublicPath'
 
 type Chunk = compilation.Chunk
 type Compilation = compilation.Compilation
@@ -29,7 +25,6 @@ type ChunkGroup = compilation.ChunkGroup & {
 // hack
 interface MainTemplate extends Compilation {
   mainTemplate: Compilation
-  requireFn: string
 }
 
 export type FileInfo = IFileInfo
@@ -66,19 +61,9 @@ export default class Webpack4CDNPlugin {
     }
 
     this.checkPublicPath(compiler)
-    // this.renameRequireFn(compiler)
     this.tapCompilationHook(compiler)
     compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
   }
-
-  /*
-  private renameRequireFn(compiler: Compiler) {
-    compiler.hooks.compilation.tap('rename_main_template', compilation => {
-      const mainTemplate = <MainTemplate>compilation.mainTemplate
-      mainTemplate.requireFn = this.config.requireFn
-    })
-  }
-  */
 
   /** take `publicPath` carefully */
   private checkPublicPath(compiler: Compiler) {
@@ -145,17 +130,6 @@ export default class Webpack4CDNPlugin {
   ) {
     const { entryFeature, entryFeatureMarker } = this
 
-    const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const requireFn = <string>mainTemplate.requireFn
-
-    const regexp = (re: RegExp) =>
-      quickRegExpr(re, '__webpack_require__', requireFn)
-
-    const rePublicPathAssign = regexp(/__webpack_require__\.p\s*=\s*[^\n]+/g)
-    const reWebapckRequireAsset = regexp(
-      /__webpack_require__\.p\s*\+\s*([^\n;]+)/g
-    )
-
     const files = chunks.reduce(
       (acc: string[], chunk) => acc.concat(chunk.files),
       []
@@ -173,29 +147,13 @@ export default class Webpack4CDNPlugin {
       if (source.includes(entryFeature)) {
         // entry marker
         source = source.replace(entryFeature, entryFeatureMarker)
-        // drop public path to empty string
-        source = source.replace(
-          rePublicPathAssign,
-          (match: string) => `/* ${match} */`
-        )
         changed = true
       }
 
       // rename asset paths
-      if (reWebapckRequireAsset.test(source)) {
-        source = source.replace(
-          reWebapckRequireAsset,
-          (m: string, g1: string) => {
-            return `/* ${m.trim()} */ window["${
-              this.config.assetMappingVariable
-            }"].find(${g1});\n`
-          }
-        )
-        changed = true
-      }
-
-      if (changed) {
-        compilation.assets[file] = new RawSource(source)
+      const result = replacePublicPath(source, this.config.assetMappingVariable)
+      if (changed || result.changed) {
+        compilation.assets[file] = new RawSource(result.code)
       }
     })
 
@@ -262,7 +220,9 @@ export default class Webpack4CDNPlugin {
     const variableName = this.config.assetMappingVariable
     this.assetManifest = [
       `\n;window["${variableName}"] = ${mapToJSON(assetsMap)};`,
-      `\n;window["${variableName}"].find = function (s) {return this[s] || s;};`
+      `\n;window["${variableName}"].find = function (path, __webpack_require__) {`,
+      `\n  return this[path] || (__webpack_require__.p + path);`,
+      `\n};`
     ].join('')
 
     // upload entry chunk files
