@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.3](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.2...v1.5.3) (2019-12-16)
+
+
+### Bug Fixes
+
+* reduce changes to original code ([d7d7f90](https://github.com/AngusFu/webpack4-cdn-plugin/commit/d7d7f9072765910ade3c61610780c8666f25b09d))
+
+
+
 ## [1.5.2](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.1...v1.5.2) (2019-12-16)
 
 
