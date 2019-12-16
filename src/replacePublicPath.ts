@@ -2,8 +2,10 @@ import * as t from '@babel/types'
 import * as parser from '@babel/parser'
 import generate from '@babel/generator'
 import traverse, { NodePath } from '@babel/traverse'
+import MagicString from 'magic-string'
 
 export function replacePublicPath(source: string, variableName: string) {
+  const code = new MagicString(source)
   const ast = parser.parse(source)
   let changed = false
 
@@ -34,6 +36,8 @@ export function replacePublicPath(source: string, variableName: string) {
           }
         }
 
+        const { start, end } = parent.node
+
         parent.replaceWith(
           t.callExpression(
             t.memberExpression(
@@ -46,14 +50,16 @@ export function replacePublicPath(source: string, variableName: string) {
             ),
             [
               parent.node as t.BinaryExpression,
-              t.identifier('__webpack_require__.p')
+              t.identifier('__webpack_require__')
             ]
           )
         )
+
         changed = true
+        code.overwrite(start!, end!, generate(parent.node).code)
       }
     }
   })
 
-  return { code: generate(ast).code, changed }
+  return { code: code.toString(), changed }
 }
