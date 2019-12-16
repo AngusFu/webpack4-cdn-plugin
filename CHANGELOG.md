@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.1](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.0...v1.5.1) (2019-12-16)
+
+
+### Reverts
+
+* bug on custom requireFn ([774c722](https://github.com/AngusFu/webpack4-cdn-plugin/commit/774c722))
+
+
+
 # [1.5.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.4.0...v1.5.0) (2019-12-13)
 
 

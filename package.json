@@ -1,6 +1,6 @@
 {
   "name": "webpack4-cdn-plugin",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "main": "index.js",
   "types": "types/index.d.ts",
   "description": "Upload your webpack-generated assets to CDN, allowing renaming/rehashing.",
