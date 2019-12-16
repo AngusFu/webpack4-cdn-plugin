@@ -66,17 +66,19 @@ export default class Webpack4CDNPlugin {
     }
 
     this.checkPublicPath(compiler)
-    this.renameRequireFn(compiler)
+    // this.renameRequireFn(compiler)
     this.tapCompilationHook(compiler)
     compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
   }
 
+  /*
   private renameRequireFn(compiler: Compiler) {
     compiler.hooks.compilation.tap('rename_main_template', compilation => {
       const mainTemplate = <MainTemplate>compilation.mainTemplate
       mainTemplate.requireFn = this.config.requireFn
     })
   }
+  */
 
   /** take `publicPath` carefully */
   private checkPublicPath(compiler: Compiler) {

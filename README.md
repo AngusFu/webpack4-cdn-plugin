@@ -49,9 +49,6 @@ module.exports = {
 
 if (process.env.NODE_ENV === 'production') {
   const cdnPlugin = new WebpackCDNPlugin({
-    // rename `__webpack_require__` in webpack main template,
-    // default:  `"__webpack4cdn_plugin_require__"`
-    requireFn: '__custom_webpack_require__',
     // whether to keep generated files (on local fs), default: `false`
     keepLocalFiles: false,
     // whether to keep generated sourcemaps, default: `false`
