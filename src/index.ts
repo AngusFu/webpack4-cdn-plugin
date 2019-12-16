@@ -33,7 +33,8 @@ export type Configuration = IConfiguration
 export default class Webpack4CDNPlugin {
   private config: Required<Configuration>
   private entryFeature = '// webpackBootstrap'
-  private entryFeatureMarker = '__webpackBootstrap__=1'
+  private entryFeatureMarker = '__webpackBootstrap__ = 1'
+  private entryFeatureMarkerRe = /__webpackBootstrap__\s*=\s*1/
 
   private assetsMap = new Map()
   private assetManifest: string = ''
@@ -247,7 +248,7 @@ export default class Webpack4CDNPlugin {
       )
     }
 
-    const { entryFeatureMarker, assetManifest } = this
+    const { entryFeatureMarkerRe, assetManifest } = this
     for (let file of htmlFilenames) {
       const origSource = compilation.assets[file].source
       const html = compilation.assets[file].source().toString()
@@ -255,8 +256,8 @@ export default class Webpack4CDNPlugin {
 
       // inject manifest in case there is a inline chunk plugin...
       // TODO more strict check: replace only within <script> tags
-      if (assetManifest && replaced.includes(entryFeatureMarker)) {
-        replaced = replaced.replace(entryFeatureMarker, `${assetManifest}`)
+      if (assetManifest && entryFeatureMarkerRe.test(replaced)) {
+        replaced = replaced.replace(entryFeatureMarkerRe, `${assetManifest}`)
       }
 
       compilation.assets[file].source = () => replaced

@@ -2,10 +2,8 @@ import * as t from '@babel/types'
 import * as parser from '@babel/parser'
 import generate from '@babel/generator'
 import traverse, { NodePath } from '@babel/traverse'
-import MagicString from 'magic-string'
 
 export function replacePublicPath(source: string, variableName: string) {
-  const code = new MagicString(source)
   const ast = parser.parse(source)
   let changed = false
 
@@ -25,20 +23,20 @@ export function replacePublicPath(source: string, variableName: string) {
         t.isIdentifier(property) &&
         property.name === 'p'
       ) {
+        let current = path as NodePath<t.BinaryExpression>
+
+        // replace `__webpack_require__.p + ?` with `?`
         path.replaceWith(right)
 
-        let parent = path as NodePath<t.BinaryExpression>
         while (true) {
-          if (t.isBinaryExpression(parent.parentPath)) {
-            parent = parent.parentPath as NodePath<t.BinaryExpression>
+          if (t.isBinaryExpression(current.parentPath)) {
+            current = current.parentPath as NodePath<t.BinaryExpression>
           } else {
             break
           }
         }
 
-        const { start, end } = parent.node
-
-        parent.replaceWith(
+        current.replaceWith(
           t.callExpression(
             t.memberExpression(
               t.memberExpression(
@@ -49,17 +47,16 @@ export function replacePublicPath(source: string, variableName: string) {
               t.identifier('find')
             ),
             [
-              parent.node as t.BinaryExpression,
+              current.node as t.BinaryExpression,
               t.identifier('__webpack_require__')
             ]
           )
         )
 
         changed = true
-        code.overwrite(start!, end!, generate(parent.node).code)
       }
     }
   })
 
-  return { code: code.toString(), changed }
+  return { code: changed ? generate(ast).code : source, changed }
 }
