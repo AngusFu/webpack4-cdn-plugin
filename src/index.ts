@@ -398,10 +398,11 @@ export default class Webpack4CDNPlugin {
     }
 
     let source = asset.source().toString()
-    const { entryFeatureMarker, assetManifest } = this
+    const { entryFeatureMarkerRe, assetManifest } = this
+
     // inject manifest
-    if (assetManifest && source.includes(entryFeatureMarker)) {
-      source = source.replace(entryFeatureMarker, `${assetManifest}`)
+    if (assetManifest && entryFeatureMarkerRe.test(source)) {
+      source = source.replace(entryFeatureMarkerRe, `${assetManifest}`)
       asset.source = () => source
     }
 
