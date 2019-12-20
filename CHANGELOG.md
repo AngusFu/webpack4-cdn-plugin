@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.6](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.5...v1.5.6) (2019-12-20)
+
+
+### Bug Fixes
+
+* webpackAssetMappings 未定义的问题 ([211d23a](https://github.com/AngusFu/webpack4-cdn-plugin/commit/211d23ac91c87b331302a6af0946d4f9a41a2d1d))
+
+
+
 ## [1.5.5](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.4...v1.5.5) (2019-12-16)
 
 
