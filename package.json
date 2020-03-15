@@ -41,7 +41,7 @@
     "@types/babel__generator": "^7.6.1",
     "@types/babel__traverse": "^7.0.8",
     "@types/node": "11.12.0",
-    "@types/webpack": "4.4.26",
+    "@types/webpack": "4.41.7",
     "@types/webpack-sources": "0.1.5",
     "commitizen": "3.0.7",
     "cz-conventional-changelog": "2.1.0",
