@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [1.6.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.6...v1.6.0) (2020-07-27)
+
+
+### Features
+
+* 初步支持 webpack3 (一些特性如动态 import 等有待测试) ([f01c97e](https://github.com/AngusFu/webpack4-cdn-plugin/commit/f01c97eaddf43938b72498fff4e07289e8f3bb7a))
+
+
+
 ## [1.5.6](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.5...v1.5.6) (2019-12-20)
 
 
