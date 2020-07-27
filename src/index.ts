@@ -20,7 +20,10 @@ type Compilation = compilation.Compilation
 
 // hack
 type ChunkGroup = compilation.ChunkGroup & {
+  // webpack4
   getFiles: () => string[]
+  // webpack3
+  files: string[]
 }
 // hack
 interface MainTemplate extends Compilation {
@@ -61,67 +64,56 @@ export default class Webpack4CDNPlugin {
       return
     }
 
-    this.checkPublicPath(compiler)
-    this.tapCompilationHook(compiler)
-    compiler.hooks.emit.tapAsync(this.pluginName, this.onEmit.bind(this))
+    const { pluginName } = this
+
+    if (compiler.hooks) {
+      compiler.hooks.thisCompilation.tap(
+        pluginName,
+        this.checkPublicPath.bind(this)
+      )
+      compiler.hooks.compilation.tap(
+        pluginName,
+        this.tapCompilationHook.bind(this)
+      )
+      compiler.hooks.emit.tapAsync(pluginName, this.onEmit.bind(this))
+    } else {
+      compiler.plugin('this-compilation', this.checkPublicPath.bind(this))
+      compiler.plugin('compilation', this.tapCompilationHook.bind(this))
+      compiler.plugin('emit', this.onEmit.bind(this))
+    }
   }
 
   /** take `publicPath` carefully */
-  private checkPublicPath(compiler: Compiler) {
-    compiler.hooks.thisCompilation.tap(this.pluginName, compilation => {
-      const mainTemplate = <MainTemplate>compilation.mainTemplate
-      const { outputOptions } = mainTemplate
-      const publicPath = outputOptions.publicPath || ''
+  private checkPublicPath(compilation: Compilation) {
+    const mainTemplate = <MainTemplate>compilation.mainTemplate
+    const { outputOptions } = mainTemplate
+    const publicPath = outputOptions.publicPath || ''
 
-      assert(
-        !publicPath || publicPath === '/',
-        `Error: do not set \`ouput.publicPath\`: ${publicPath}`
-      )
+    assert(
+      !publicPath || publicPath === '/',
+      `Error: do not set \`ouput.publicPath\`: ${publicPath}`
+    )
 
-      // set default publicPath
-      outputOptions.publicPath = publicPath
-    })
+    // set default publicPath
+    outputOptions.publicPath = publicPath
   }
 
-  private tapCompilationHook(compiler: Compiler) {
+  private tapCompilationHook(compilation: Compilation) {
     const { pluginName } = this
 
-    compiler.hooks.compilation.tap(pluginName, compilation => {
-      // SEE https://github.com/webpack/webpack/blob/master/lib/TemplatedPathPlugin.js
-      const mainTemplate = <MainTemplate>compilation.mainTemplate
-      const assetPathHook = mainTemplate.hooks.assetPath
-
-      assetPathHook.tap(pluginName, (path, data) => {
-        const taps = assetPathHook.taps.filter(tap => tap.name !== pluginName)
-
-        // there should be one tap at least
-        assert(
-          taps.length > 0,
-          'Unexpected Error in compilation.mainTemplate.hooks.assetPath: ' +
-            'please file an issue to the author.'
-        )
-
-        // no `\n` is allowed, since we have to replace asset path with
-        // `global[mappingVar].find(original)`
-        const str = String(taps[0].fn(path, data)).trim()
-        assert(
-          /\n/.test(str) === false,
-          'Unexpected Error in compilation.mainTemplate.hooks.assetPath: ' +
-            `asset path should not contain any line breaker ——\n ${str}`
-        )
-
-        // asset path that is ensured by us
-        return str
-      })
-
-      // SEE https://webpack.js.org/api/compilation-hooks/#optimizechunkassets
-      const optimizeChunkAssetsHook = compilation.hooks.optimizeChunkAssets
-      const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(
-        this,
-        compilation
+    // SEE https://webpack.js.org/api/compilation-hooks/#optimizechunkassets
+    const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(
+      this,
+      compilation
+    )
+    if (compilation.hooks) {
+      compilation.hooks.optimizeChunkAssets.tapAsync(
+        pluginName,
+        onOptimizeChunkAsset
       )
-      optimizeChunkAssetsHook.tapAsync(pluginName, onOptimizeChunkAsset)
-    })
+    } else {
+      compilation.plugin('optimize-chunk-assets', onOptimizeChunkAsset)
+    }
   }
 
   private async onOptimizeChunkAsset(
@@ -167,12 +159,22 @@ export default class Webpack4CDNPlugin {
 
     const mainTemplate = <MainTemplate>compilation.mainTemplate
     const { publicPath } = mainTemplate.outputOptions
-    const chunkGroups = compilation.chunkGroups
+    // webpack4 vs webapck3
+    // TODO have more tests
+    const chunkGroups = compilation.chunkGroups || compilation.chunks
 
     // ignore sourcemaps
     const isNotSourceMap = (file: string) => !file.endsWith('.map')
     const getFileOfChunkGroups = function(groups: ChunkGroup[]) {
-      return groups.reduce((acc: string[], g) => acc.concat(g.getFiles()), [])
+      return groups.reduce(
+        (acc: string[], g) =>
+          acc.concat(
+            g.getFiles
+              ? g.getFiles() // webpack4
+              : g.files
+          ),
+        []
+      )
     }
 
     const assetFilenames = Object.keys(compilation.assets)
