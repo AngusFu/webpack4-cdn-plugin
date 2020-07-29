@@ -17,8 +17,6 @@ if (process.env.NODE_ENV === 'production') {
     backupHTMLFiles: false,
     // manifest file name (`String | false`)
     manifestFilename: 'manifest.json',
-    // global varibale name to manifest object
-    assetMappingVariable: 'webpackAssetMappings',
 
     uploadContent({ content, extname, file }) {
       const name = basename(file)

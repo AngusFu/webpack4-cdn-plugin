@@ -57,8 +57,6 @@ if (process.env.NODE_ENV === 'production') {
     backupHTMLFiles: true,
     // manifest file name (`String | false`)
     manifestFilename: 'manifest.json',
-    // global varibale name to manifest object
-    assetMappingVariable: 'webpackAssetMappings',
 
     // a function, which returns `Promise<url>`
     // you can do your compressing works with content

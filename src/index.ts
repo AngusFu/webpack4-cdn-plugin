@@ -2,6 +2,7 @@ import assert from 'assert'
 import { parse } from 'url'
 import { dirname, isAbsolute, join as joinPath } from 'path'
 
+import posthtml from 'posthtml'
 import chalk from 'chalk'
 import { RawSource } from 'webpack-sources'
 import { Compiler, compilation } from 'webpack'
@@ -13,18 +14,11 @@ import {
 } from './configuration'
 
 import { getExtname, group, mapToJSON, getQueryAndHash } from './utils'
-import { replacePublicPath } from './replacePublicPath'
+import { replacePublicPath, injectAssetMap } from './replace'
 
 type Chunk = compilation.Chunk
 type Compilation = compilation.Compilation
 
-// hack
-type ChunkGroup = compilation.ChunkGroup & {
-  // webpack4
-  getFiles: () => string[]
-  // webpack3
-  files: string[]
-}
 // hack
 interface MainTemplate extends Compilation {
   mainTemplate: Compilation
@@ -35,19 +29,15 @@ export type Configuration = IConfiguration
 
 export default class Webpack4CDNPlugin {
   private config: Required<Configuration>
-  private entryFeature = '// webpackBootstrap'
-  private entryFeatureMarker = '__webpackBootstrap__ = 1'
-  private entryFeatureMarkerRe = /__webpackBootstrap__\s*=\s*1/
 
   private assetsMap = new Map()
-  private assetManifest: string = ''
-  public pluginName = 'asset-cdn-manifest-plugin'
+  private assetMapJSON = '{}'
+  public pluginName = 'webpack4-cdn-plugin'
 
   constructor(config: Configuration) {
     this.config = standardize(config)
   }
 
-  /** Webpack plugin interface */
   public apply(compiler: Compiler) {
     const env = process.env.NODE_ENV || compiler.options.mode
 
@@ -61,58 +51,49 @@ export default class Webpack4CDNPlugin {
             ' mode.'
         )
       )
+
       return
     }
 
     const { pluginName } = this
+    const onEmit = this.onEmit.bind(this)
+    const onCompilation = this.onCompilation.bind(this)
+    const onThisCompilation = this.onThisCompilation.bind(this)
 
     if (compiler.hooks) {
-      compiler.hooks.thisCompilation.tap(
-        pluginName,
-        this.checkPublicPath.bind(this)
-      )
-      compiler.hooks.compilation.tap(
-        pluginName,
-        this.tapCompilationHook.bind(this)
-      )
-      compiler.hooks.emit.tapAsync(pluginName, this.onEmit.bind(this))
+      compiler.hooks.emit.tapAsync(pluginName, onEmit)
+      compiler.hooks.compilation.tap(pluginName, onCompilation)
+      compiler.hooks.thisCompilation.tap(pluginName, onThisCompilation)
     } else {
-      compiler.plugin('this-compilation', this.checkPublicPath.bind(this))
-      compiler.plugin('compilation', this.tapCompilationHook.bind(this))
-      compiler.plugin('emit', this.onEmit.bind(this))
+      compiler.plugin('emit', onEmit)
+      compiler.plugin('compilation', onCompilation)
+      compiler.plugin('this-compilation', onThisCompilation)
     }
   }
 
-  /** take `publicPath` carefully */
-  private checkPublicPath(compilation: Compilation) {
+  private onThisCompilation(compilation: Compilation) {
     const mainTemplate = <MainTemplate>compilation.mainTemplate
     const { outputOptions } = mainTemplate
     const publicPath = outputOptions.publicPath || ''
 
     assert(
       !publicPath || publicPath === '/',
-      `Error: do not set \`ouput.publicPath\`: ${publicPath}`
+      `Error: do not set \`output.publicPath\`: ${publicPath}`
     )
 
     // set default publicPath
     outputOptions.publicPath = publicPath
   }
 
-  private tapCompilationHook(compilation: Compilation) {
-    const { pluginName } = this
+  private onCompilation(compilation: Compilation) {
+    const { pluginName, onOptimizeChunkAsset } = this
 
-    // SEE https://webpack.js.org/api/compilation-hooks/#optimizechunkassets
-    const onOptimizeChunkAsset = this.onOptimizeChunkAsset.bind(
-      this,
-      compilation
-    )
+    const fn = onOptimizeChunkAsset.bind(this, compilation)
+
     if (compilation.hooks) {
-      compilation.hooks.optimizeChunkAssets.tapAsync(
-        pluginName,
-        onOptimizeChunkAsset
-      )
+      compilation.hooks.optimizeChunkAssets.tapAsync(pluginName, fn)
     } else {
-      compilation.plugin('optimize-chunk-assets', onOptimizeChunkAsset)
+      compilation.plugin('optimize-chunk-assets', fn)
     }
   }
 
@@ -121,8 +102,6 @@ export default class Webpack4CDNPlugin {
     chunks: Chunk[],
     callback: CallableFunction
   ) {
-    const { entryFeature, entryFeatureMarker } = this
-
     const files = chunks.reduce(
       (acc: string[], chunk) => acc.concat(chunk.files),
       []
@@ -134,19 +113,14 @@ export default class Webpack4CDNPlugin {
         return
       }
 
-      let changed = false
-      let source = compilation.assets[file].source().toString()
+      const source = compilation.assets[file].source().toString()
+      // rewrite `__webpack_require__.p + ...` to function call,
+      // and add `__webpack_require__.__asset__` method
+      const result = replacePublicPath(source)
 
-      if (source.includes(entryFeature)) {
-        // entry marker
-        source = source.replace(entryFeature, entryFeatureMarker)
-        changed = true
-      }
-
-      // rename asset paths
-      const result = replacePublicPath(source, this.config.assetMappingVariable)
-      if (changed || result.changed) {
+      if (result.changed) {
         compilation.assets[file] = new RawSource(result.code)
+        // TODO rewrite sourcemap file
       }
     })
 
@@ -154,19 +128,15 @@ export default class Webpack4CDNPlugin {
   }
 
   private async onEmit(compilation: Compilation, callback: CallableFunction) {
-    const assetsMap = this.assetsMap
     const uploadFile = (file: string) => this.upload(file, compilation)
 
-    const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { publicPath } = mainTemplate.outputOptions
-    // webpack4 vs webapck3
-    // TODO have more tests
-    const chunkGroups = compilation.chunkGroups || compilation.chunks
+    const { assetsMap } = this
+    const { assets } = compilation
+    const filenames = Object.keys(assets)
 
-    // ignore sourcemaps
-    const isNotSourceMap = (file: string) => !file.endsWith('.map')
-    const getFileOfChunkGroups = function(groups: ChunkGroup[]) {
-      return groups.reduce(
+    const entryPoints = (compilation.chunkGroups || compilation.chunks)
+      .filter(g => g.isInitial())
+      .reduce(
         (acc: string[], g) =>
           acc.concat(
             g.getFiles
@@ -175,64 +145,64 @@ export default class Webpack4CDNPlugin {
           ),
         []
       )
-    }
+      .filter(file => file.endsWith('.js'))
 
-    const assetFilenames = Object.keys(compilation.assets)
-    const cssFilenames = assetFilenames.filter(
-      file => getExtname(file) === 'css'
+    const [cssOrHtml, otherFiles] = group(filenames, file =>
+      /\.(css|html)$/.test(file)
     )
-    const htmlFilenames = assetFilenames.filter(
-      file => getExtname(file) === 'html'
+    const [cssFilenames, htmlFilenames] = group(cssOrHtml, file =>
+      file.endsWith('.css')
     )
-    const chunkFiles = getFileOfChunkGroups(chunkGroups)
-    // assets (html & chunk files excluded)
-    const staticAssets = assetFilenames.filter(file => {
-      // html/css should be uploaded later
-      if (['css', 'html'].includes(getExtname(file))) return false
-      // chunk file uploaded later
-      if (chunkFiles.includes(file)) return false
-      return true
+    const staticAssets = otherFiles.filter(file => {
+      return (
+        file.endsWith('.js') === false || entryPoints.includes(file) === false
+      )
     })
 
-    // Note: ep === entrypoint
-    const [epChunksGroups, otherChunkGroups] = group(chunkGroups, group =>
-      group.isInitial()
-    )
-    const epFiles = getFileOfChunkGroups(epChunksGroups).filter(isNotSourceMap)
-    const otherChunkFiles = getFileOfChunkGroups(otherChunkGroups)
-      .filter(isNotSourceMap)
-      // epFiles and otherChunkFiles could contain the same files,
-      // this may sound impossible, but it did happened,
-      // when I was testing DLL with a demo repo from
-      // https://github.com/babytutu/webpack-demo/tree/08ef2805882ba06979669ba5e8254c627010e1e2
-      .filter(file => epFiles.includes(file) === false)
-
-    // upload static assets and dynamic chunk files first
-    // so as to collect file mapping data
-    // 1. statics
+    // 1. static assets like js/fonts/images
     await Promise.all(staticAssets.map(uploadFile))
 
-    // replace CSS `url()` references
-    // ASUMPTION: CSS files are always in chunks
-    this.replaceCSSURLs(cssFilenames, compilation)
-
-    // 2.dynamic chunk files (js/css)
-    await Promise.all(otherChunkFiles.map(uploadFile))
+    // 2. replace CSS `url()`s, then upload them
+    this.interpolateCSSAssets(cssFilenames, compilation)
+    await Promise.all(cssFilenames.map(uploadFile))
 
     // DO NOT move this line!!!
-    const variableName = this.config.assetMappingVariable
-    this.assetManifest = [
-      `\n;window["${variableName}"] = ${mapToJSON(assetsMap)};`,
-      `\n;window["${variableName}"].find = function (path, __webpack_require__) {`,
-      `\n  return this[path] || (__webpack_require__.p + path);`,
-      `\n};`
-    ].join('')
+    this.assetMapJSON = mapToJSON(assetsMap)
 
     // upload entry chunk files
-    await Promise.all(epFiles.map(uploadFile))
+    await Promise.all(entryPoints.map(uploadFile))
 
-    // now, since all files (except html/sourcemap) are uploaded,
+    // now that all files (except html / source map) are uploaded,
     // we can replace these urls within html files
+    await this.interpolateHTMLAssets(htmlFilenames, compilation)
+
+    const { keepSourcemaps, manifestFilename } = this.config
+
+    // remove sourcemaps according to user option
+    if (!keepSourcemaps) {
+      filenames.forEach(file => {
+        if (file.endsWith('.map')) {
+          delete compilation.assets[file]
+        }
+      })
+    }
+
+    // generate manifest file
+    if (manifestFilename && typeof manifestFilename === 'string') {
+      compilation.assets[manifestFilename] = new RawSource(mapToJSON(assetsMap))
+    }
+
+    callback()
+  }
+
+  private async interpolateHTMLAssets(
+    htmlFiles: string[],
+    compilation: Compilation
+  ) {
+    const { assetsMap, assetMapJSON } = this
+    const mainTemplate = <MainTemplate>compilation.mainTemplate
+    const { publicPath } = mainTemplate.outputOptions
+
     const rePublicPath = RegExp(`^${publicPath}`) // ('' or '/')
     const reIgnorePath = /^(?:(https?:)?\/\/)|(?:data:)/
     const reImport = /(?:<(?:link|script|img)[^>]+(?:src|href)\s*=\s*)(['"]?)([^'"\s>]+)\1/g
@@ -250,17 +220,53 @@ export default class Webpack4CDNPlugin {
       )
     }
 
-    const { entryFeatureMarkerRe, assetManifest } = this
-    for (let file of htmlFilenames) {
-      const origSource = compilation.assets[file].source
-      const html = compilation.assets[file].source().toString()
-      let replaced = replaceImports(html)
+    const validScriptTypes = [
+      'module',
+      'application/javascript',
+      'text/javascript'
+    ]
+    const replaceHTML = (html: string) => {
+      return posthtml<any, string>([
+        // replace possible inline manifest
+        function(tree) {
+          tree.match({ tag: 'script' }, node => {
+            const { attrs } = node
 
-      // inject manifest in case there is a inline chunk plugin...
-      // TODO more strict check: replace only within <script> tags
-      if (assetManifest && entryFeatureMarkerRe.test(replaced)) {
-        replaced = replaced.replace(entryFeatureMarkerRe, `${assetManifest}`)
-      }
+            if (attrs) {
+              if ('src' in attrs) return node
+
+              if (
+                'type' in attrs &&
+                validScriptTypes.includes(String(attrs.type)) === false
+              ) {
+                return node
+              }
+            }
+
+            if (!node.content) {
+              return node
+            }
+
+            const content = node.content![0] as string
+            const result = injectAssetMap(content, assetMapJSON)
+
+            if (result.changed) {
+              node.content[0] = result.code
+            }
+
+            return node
+          })
+        }
+      ]).process(html)
+    }
+
+    for (let file of htmlFiles) {
+      const origSource = compilation.assets[file].source
+      const html: string = compilation.assets[file].source().toString()
+
+      let replaced = replaceImports(html)
+      const result = await replaceHTML(replaced)
+      replaced = result.html
 
       compilation.assets[file].source = () => replaced
 
@@ -272,26 +278,9 @@ export default class Webpack4CDNPlugin {
         }
       }
     }
-
-    // remove sourcemaps according to user option
-    if (!this.config.keepSourcemaps) {
-      assetFilenames.forEach(file => {
-        if (!isNotSourceMap(file)) {
-          delete compilation.assets[file]
-        }
-      })
-    }
-
-    // generate manifest file
-    const { manifestFilename } = this.config
-    if (manifestFilename && typeof manifestFilename === 'string') {
-      compilation.assets[manifestFilename] = new RawSource(mapToJSON(assetsMap))
-    }
-    callback()
   }
 
-  /** replace `url()` in CSS using assets map */
-  private replaceCSSURLs(cssFiles: string[], compilation: Compilation) {
+  private interpolateCSSAssets(cssFiles: string[], compilation: Compilation) {
     // SEE https://www.regextester.com/106463
     const re = /url\((?!['"]?(?:data:|https?:|\/\/))(['"]?)([^'")]*)\1\)/g
     const assets = compilation.assets
@@ -346,13 +335,10 @@ export default class Webpack4CDNPlugin {
     }
   }
 
-  /**
-   * upload file using the function in user config,
-   * program would terminate if any error is caught
-   */
   private async upload(file: string, compilation: Compilation) {
     try {
       const asset = this.tryInjectManifest(file, compilation)
+
       const url = await this.config.uploadContent({
         file,
         content: asset.source(),
@@ -372,26 +358,23 @@ export default class Webpack4CDNPlugin {
       if (!this.config.keepLocalFiles) {
         delete compilation.assets[file]
       }
+
       this.assetsMap.set(file, url)
+
       return url
     } catch (e) {
       console.log(
         chalk.red(chalk.black.bgRed('[Error]') + ' Uploading failed: \n' + file)
       )
       console.log(chalk.red(e.toString()))
+
       return file
     }
   }
 
-  /**
-   * injects asset manifest into entrypoint JavaScript files
-   *
-   * @param {String} file        file path
-   * @param {Object} compilation webpack compilation
-   * @returns {Object} webpack asset object whose `.source` method could have been overridden
-   */
   private tryInjectManifest(file: string, compilation: Compilation) {
     const asset = compilation.assets[file]
+
     assert(asset, `${file} does not exists`)
 
     // only replace JavaScript files
@@ -400,11 +383,11 @@ export default class Webpack4CDNPlugin {
     }
 
     let source = asset.source().toString()
-    const { entryFeatureMarkerRe, assetManifest } = this
+    const result = injectAssetMap(source, this.assetMapJSON)
 
-    // inject manifest
-    if (assetManifest && entryFeatureMarkerRe.test(source)) {
-      source = source.replace(entryFeatureMarkerRe, `${assetManifest}`)
+    if (result.changed) {
+      source = result.code
+
       asset.source = () => source
     }
 

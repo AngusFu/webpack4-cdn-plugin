@@ -5,7 +5,6 @@ const plugin = new WebpackCDNPlugin({
   keepSourcemaps: false,
   backupHTMLFiles: false,
   manifestFilename: false,
-  assetMappingVariable: 'webpackAssetMappings',
   uploadContent({ file, content, extname }) {
     // Test error handling
     if (file.endsWith('.svg') || file.endsWith('.css')) {

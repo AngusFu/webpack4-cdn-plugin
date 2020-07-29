@@ -21,8 +21,6 @@ export interface Configuration {
    * not need this file.
    */
   manifestFilename?: string | boolean
-  /** the global variable */
-  assetMappingVariable?: string
 }
 
 /** default configuration */
@@ -30,8 +28,7 @@ export const defaults: Omit<Required<Configuration>, 'uploadContent'> = {
   keepLocalFiles: false,
   keepSourcemaps: false,
   backupHTMLFiles: false,
-  manifestFilename: false,
-  assetMappingVariable: 'webpackAssetMappings'
+  manifestFilename: false
 }
 
 /** merge user configuration with defaults */
@@ -43,13 +40,8 @@ export const standardize = function(
     '`config.uploadContent` is not a function.'
   )
 
-  const variableName = config.assetMappingVariable
-  const isValidName = variableName && typeof variableName === 'string'
-  const name = isValidName ? variableName : defaults.assetMappingVariable
-
   return {
     ...defaults,
-    ...config,
-    assetMappingVariable: encodeURIComponent(<string>name)
+    ...config
   }
 }
