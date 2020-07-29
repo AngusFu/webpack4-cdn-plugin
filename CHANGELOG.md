@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+# [2.0.0-alpha.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.6.0...v2.0.0-alpha.0) (2020-07-29)
+
+
+### Features
+
+* performance enhancement ([2b73d3c](https://github.com/AngusFu/webpack4-cdn-plugin/commit/2b73d3c739ff0e012bde7ac34a781355d8138003))
+
+
+### BREAKING CHANGES
+
+* remove babel
+
+
+
 # [1.6.0](https://github.com/AngusFu/webpack4-cdn-plugin/compare/v1.5.6...v1.6.0) (2020-07-27)
 
 
