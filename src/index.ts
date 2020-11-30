@@ -18,14 +18,25 @@ import { replacePublicPath, injectAssetMap } from './replace'
 
 type Chunk = compilation.Chunk
 type Compilation = compilation.Compilation
-
+type CompilationHooks = compilation.CompilationHooks
 // hack
 interface MainTemplate extends Compilation {
   mainTemplate: Compilation
 }
 
+// hack in webpack5
+interface ICompilationHooks extends CompilationHooks {
+  processAssets: any
+}
+interface ICompiler extends Compiler {
+  resolvers: any
+  webpack: any
+}
+
 export type FileInfo = IFileInfo
 export type Configuration = IConfiguration
+
+let isWebpack4: Boolean
 
 export default class Webpack4CDNPlugin {
   private config: Required<Configuration>
@@ -38,8 +49,12 @@ export default class Webpack4CDNPlugin {
     this.config = standardize(config)
   }
 
-  public apply(compiler: Compiler) {
+  public apply(compiler: ICompiler) {
     const env = process.env.NODE_ENV || compiler.options.mode
+    // https://github.com/webpack-contrib/mini-css-extract-plugin/blob/fed2dea277062ab8a115a8cdf9ee47991b081102/src/index.js#L106
+    isWebpack4 = compiler.webpack
+      ? false
+      : typeof compiler.resolvers !== 'undefined'
 
     // only works on productions mode (or debugging mode)
     if (!process.env.VS_DEBUG && env !== 'production') {
@@ -73,7 +88,7 @@ export default class Webpack4CDNPlugin {
 
   private onThisCompilation(compilation: Compilation) {
     const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { outputOptions } = mainTemplate
+    const { outputOptions } = isWebpack4 ? mainTemplate : compilation
     const publicPath = outputOptions.publicPath || ''
 
     assert(
@@ -91,7 +106,10 @@ export default class Webpack4CDNPlugin {
     const fn = onOptimizeChunkAsset.bind(this, compilation)
 
     if (compilation.hooks) {
-      compilation.hooks.optimizeChunkAssets.tapAsync(pluginName, fn)
+      const assetsHook = isWebpack4
+        ? compilation.hooks.optimizeChunkAssets
+        : (compilation.hooks as ICompilationHooks).processAssets
+      assetsHook.tapAsync(pluginName, fn)
     } else {
       compilation.plugin('optimize-chunk-assets', fn)
     }
@@ -102,6 +120,7 @@ export default class Webpack4CDNPlugin {
     chunks: Chunk[],
     callback: CallableFunction
   ) {
+    chunks = isWebpack4 ? chunks : Array.from(chunks)
     const files = chunks.reduce(
       (acc: string[], chunk) => acc.concat(chunk.files),
       []
@@ -201,7 +220,9 @@ export default class Webpack4CDNPlugin {
   ) {
     const { assetsMap, assetMapJSON } = this
     const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { publicPath } = mainTemplate.outputOptions
+    const { publicPath } = isWebpack4
+      ? mainTemplate.outputOptions
+      : compilation.outputOptions
 
     const rePublicPath = RegExp(`^${publicPath}`) // ('' or '/')
     const reIgnorePath = /^(?:(https?:)?\/\/)|(?:data:)/
@@ -285,7 +306,9 @@ export default class Webpack4CDNPlugin {
     const re = /url\((?!['"]?(?:data:|https?:|\/\/))(['"]?)([^'")]*)\1\)/g
     const assets = compilation.assets
     const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { publicPath } = mainTemplate.outputOptions
+    const { publicPath } = isWebpack4
+      ? mainTemplate.outputOptions
+      : compilation.outputOptions
 
     for (let file of cssFiles) {
       let changed = false
