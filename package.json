@@ -1,6 +1,6 @@
 {
   "name": "webpack4-cdn-plugin",
-  "version": "2.0.0",
+  "version": "2.0.0-alpha.0",
   "main": "index.js",
   "types": "types/index.d.ts",
   "description": "Upload your webpack-generated assets to CDN, allowing renaming/rehashing.",
@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/AngusFu/webpack4-cdn-plugin#readme",
   "peerDependencies": {
-    "webpack": ">=4.0.0 || ^5.0.0"
+    "webpack": ">=4.0"
   },
   "dependencies": {
     "chalk": "^2.4.2",
