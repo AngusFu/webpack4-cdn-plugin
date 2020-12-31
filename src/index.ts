@@ -4,7 +4,7 @@ import { dirname, isAbsolute, join as joinPath } from 'path'
 
 import posthtml from 'posthtml'
 import chalk from 'chalk'
-import { RawSource } from 'webpack-sources'
+import { RawSource, ConcatSource } from 'webpack-sources'
 import { Compiler, compilation } from 'webpack'
 
 import {
@@ -18,10 +18,32 @@ import { replacePublicPath, injectAssetMap } from './replace'
 
 type Chunk = compilation.Chunk
 type Compilation = compilation.Compilation
+type CompilationHooks = compilation.CompilationHooks
+
+interface ICompilation extends Compilation {
+  emitAsset?: any
+  updateAsset?: any
+  getAsset?: any
+  getAssets?: any
+  deleteAsset?: any
+}
 
 // hack
 interface MainTemplate extends Compilation {
   mainTemplate: Compilation
+}
+
+// hack in webpack5
+interface ICompilationHooks extends CompilationHooks {
+  processAssets: any
+}
+interface ICompiler extends Compiler {
+  resolvers: any
+  webpack: any
+}
+
+interface IWebpackCompilation {
+  PROCESS_ASSETS_STAGE_OPTIMIZE?: number
 }
 
 export type FileInfo = IFileInfo
@@ -32,14 +54,24 @@ export default class Webpack4CDNPlugin {
 
   private assetsMap = new Map()
   private assetMapJSON = '{}'
+  private isWebpack4 = false
+  private compilation: IWebpackCompilation = {}
   public pluginName = 'webpack4-cdn-plugin'
 
   constructor(config: Configuration) {
     this.config = standardize(config)
   }
 
-  public apply(compiler: Compiler) {
+  public apply(compiler: ICompiler) {
     const env = process.env.NODE_ENV || compiler.options.mode
+    // https://github.com/webpack-contrib/mini-css-extract-plugin/blob/fed2dea277062ab8a115a8cdf9ee47991b081102/src/index.js#L106
+
+    if (compiler.webpack) {
+      this.isWebpack4 = false
+      this.compilation = compiler.webpack.Compilation
+    } else {
+      this.isWebpack4 = typeof compiler.resolvers !== 'undefined'
+    }
 
     // only works on productions mode (or debugging mode)
     if (!process.env.VS_DEBUG && env !== 'production') {
@@ -73,7 +105,7 @@ export default class Webpack4CDNPlugin {
 
   private onThisCompilation(compilation: Compilation) {
     const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { outputOptions } = mainTemplate
+    const { outputOptions } = this.isWebpack4 ? mainTemplate : compilation
     const publicPath = outputOptions.publicPath || ''
 
     assert(
@@ -89,12 +121,41 @@ export default class Webpack4CDNPlugin {
     const { pluginName, onOptimizeChunkAsset } = this
 
     const fn = onOptimizeChunkAsset.bind(this, compilation)
+    const onProcessAssets = this.onProcessAssets.bind(this, compilation)
 
     if (compilation.hooks) {
-      compilation.hooks.optimizeChunkAssets.tapAsync(pluginName, fn)
+      if (this.isWebpack4) {
+        compilation.hooks.optimizeChunkAssets.tapAsync(pluginName, fn)
+      } else {
+        ;(compilation.hooks as ICompilationHooks).processAssets.tap(
+          {
+            name: pluginName,
+            stage: this.compilation.PROCESS_ASSETS_STAGE_OPTIMIZE
+          },
+          onProcessAssets
+        )
+      }
     } else {
       compilation.plugin('optimize-chunk-assets', fn)
     }
+  }
+
+  private async onProcessAssets(compilation: ICompilation, assets: any) {
+    // only deal with JavaScript files
+    const filenames = Object.keys(assets).filter(file => file.endsWith('.js'))
+
+    filenames.forEach(name => {
+      const asset = assets[name]
+      const source = asset.source().toString()
+      // rewrite `__webpack_require__.p + ...` to function call,
+      // and add `__webpack_require__.__asset__` method
+      const result = replacePublicPath(source)
+
+      if (result.changed) {
+        compilation.emitAsset(name, new RawSource(result.code))
+        // TODO rewrite sourcemap file
+      }
+    })
   }
 
   private async onOptimizeChunkAsset(
@@ -127,12 +188,13 @@ export default class Webpack4CDNPlugin {
     callback()
   }
 
-  private async onEmit(compilation: Compilation, callback: CallableFunction) {
+  private async onEmit(compilation: ICompilation, callback: CallableFunction) {
     const uploadFile = (file: string) => this.upload(file, compilation)
 
     const { assetsMap } = this
-    const { assets } = compilation
-    const filenames = Object.keys(assets)
+    const filenames: string[] = this.isWebpack4
+      ? Object.keys(compilation.assets)
+      : compilation.getAssets().map((asset: any) => asset.name)
 
     const entryPoints = (compilation.chunkGroups || compilation.chunks)
       .filter(g => g.isInitial())
@@ -182,14 +244,27 @@ export default class Webpack4CDNPlugin {
     if (!keepSourcemaps) {
       filenames.forEach(file => {
         if (file.endsWith('.map')) {
-          delete compilation.assets[file]
+          if (this.isWebpack4) {
+            delete compilation.assets[file]
+          } else {
+            compilation.deleteAsset(file)
+          }
         }
       })
     }
 
     // generate manifest file
     if (manifestFilename && typeof manifestFilename === 'string') {
-      compilation.assets[manifestFilename] = new RawSource(mapToJSON(assetsMap))
+      if (this.isWebpack4) {
+        compilation.assets[manifestFilename] = new RawSource(
+          mapToJSON(assetsMap)
+        )
+      } else {
+        compilation.emitAsset(
+          manifestFilename,
+          new RawSource(mapToJSON(assetsMap))
+        )
+      }
     }
 
     callback()
@@ -197,11 +272,13 @@ export default class Webpack4CDNPlugin {
 
   private async interpolateHTMLAssets(
     htmlFiles: string[],
-    compilation: Compilation
+    compilation: ICompilation
   ) {
     const { assetsMap, assetMapJSON } = this
     const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { publicPath } = mainTemplate.outputOptions
+    const { publicPath } = this.isWebpack4
+      ? mainTemplate.outputOptions
+      : compilation.outputOptions
 
     const rePublicPath = RegExp(`^${publicPath}`) // ('' or '/')
     const reIgnorePath = /^(?:(https?:)?\/\/)|(?:data:)/
@@ -261,35 +338,53 @@ export default class Webpack4CDNPlugin {
     }
 
     for (let file of htmlFiles) {
-      const origSource = compilation.assets[file].source
-      const html: string = compilation.assets[file].source().toString()
+      const origSource = this.isWebpack4
+        ? compilation.assets[file].source
+        : compilation.getAsset(file).source
+
+      const html: string = this.isWebpack4
+        ? origSource().toString()
+        : origSource.source().toString()
 
       let replaced = replaceImports(html)
       const result = await replaceHTML(replaced)
       replaced = result.html
 
-      compilation.assets[file].source = () => replaced
-
+      if (this.isWebpack4) {
+        compilation.assets[file].source = () => replaced
+      } else {
+        compilation.updateAsset(file, () => new ConcatSource(replaced))
+      }
       // backup html files according to user option
       if (this.config.backupHTMLFiles) {
-        compilation.assets[`${file}.bak`] = {
-          ...compilation.assets[file],
-          source: origSource
+        if (this.isWebpack4) {
+          compilation.assets[`${file}.bak`] = {
+            ...compilation.assets[file],
+            source: origSource
+          }
+        } else {
+          compilation.emitAsset(`${file}.bak`, origSource)
         }
       }
     }
   }
 
-  private interpolateCSSAssets(cssFiles: string[], compilation: Compilation) {
+  private interpolateCSSAssets(cssFiles: string[], compilation: ICompilation) {
     // SEE https://www.regextester.com/106463
     const re = /url\((?!['"]?(?:data:|https?:|\/\/))(['"]?)([^'")]*)\1\)/g
-    const assets = compilation.assets
     const mainTemplate = <MainTemplate>compilation.mainTemplate
-    const { publicPath } = mainTemplate.outputOptions
+    const { publicPath } = this.isWebpack4
+      ? mainTemplate.outputOptions
+      : compilation.outputOptions
 
     for (let file of cssFiles) {
       let changed = false
-      let content = assets[file].source().toString()
+      let content = this.isWebpack4
+        ? compilation.assets[file].source().toString()
+        : compilation
+            .getAsset(file)
+            .source.source()
+            .toString()
 
       // TODO
       // path matching is still error-prone
@@ -330,12 +425,16 @@ export default class Webpack4CDNPlugin {
       )
 
       if (changed) {
-        assets[file].source = () => content
+        if (this.isWebpack4) {
+          compilation.assets[file].source = () => content
+        } else {
+          compilation.updateAsset(file, () => new ConcatSource(content))
+        }
       }
     }
   }
 
-  private async upload(file: string, compilation: Compilation) {
+  private async upload(file: string, compilation: ICompilation) {
     try {
       const asset = this.tryInjectManifest(file, compilation)
 
@@ -356,7 +455,11 @@ export default class Webpack4CDNPlugin {
 
       // delete asset according to user option
       if (!this.config.keepLocalFiles) {
-        delete compilation.assets[file]
+        if (this.isWebpack4) {
+          delete compilation.assets[file]
+        } else {
+          compilation.deleteAsset(file)
+        }
       }
 
       this.assetsMap.set(file, url)
@@ -372,8 +475,10 @@ export default class Webpack4CDNPlugin {
     }
   }
 
-  private tryInjectManifest(file: string, compilation: Compilation) {
-    const asset = compilation.assets[file]
+  private tryInjectManifest(file: string, compilation: ICompilation) {
+    const asset = this.isWebpack4
+      ? compilation.assets[file]
+      : compilation.getAsset(file).source
 
     assert(asset, `${file} does not exists`)
 
