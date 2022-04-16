@@ -67,7 +67,7 @@
   "scripts": {
     "commit": "npx git-cz",
     "release": "npm run build && npx standard-version",
-    "format": "pretty-quick --pattern \"src/**/*.*(ts|js)\"",
+    "format": "pretty-quick --pattern \"**/*.*(ts|js)\"",
     "clean": "rm -rf build types",
     "build": "npm run clean && tsc"
   }
